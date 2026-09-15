@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { knowledgeArticle, ticketKnowledgeLink, ticketEvent, auditEvent } from "@/db/schema";
+import { knowledgeArticle, ticketKnowledgeLink, auditEvent } from "@/db/schema";
 import { eq, and, desc, or, ilike } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 import { requirePermission, hasPermission, ForbiddenError } from "@/lib/auth/context";
@@ -13,7 +13,52 @@ export type ArticleInput = {
   status: "draft" | "published";
 };
 
+export type TenantTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export class KnowledgeRepository {
+  /** Insert KB↔ticket link inside an existing tenant transaction (ticket_event row must exist in same txn). */
+  static async insertTicketLinkInTx(
+    tx: TenantTx,
+    ctx: RequestContext,
+    input: {
+      ticketId: string;
+      articleId: string;
+      linkType: "reply" | "resolve";
+      ticketEventId?: string | null;
+    }
+  ) {
+    const [link] = await tx
+      .insert(ticketKnowledgeLink)
+      .values({
+        organizationId: ctx.orgId,
+        ticketId: input.ticketId,
+        articleId: input.articleId,
+        linkedById: ctx.userId,
+        linkType: input.linkType,
+        ticketEventId: input.ticketEventId ?? null,
+      })
+      .returning();
+
+    await tx.insert(auditEvent).values({
+      organizationId: ctx.orgId,
+      actorId: ctx.userId,
+      action: "kb.linked_to_ticket",
+      resourceType: "ticket",
+      resourceId: input.ticketId,
+      metadata: { articleId: input.articleId, linkType: input.linkType },
+    });
+
+    return link;
+  }
+
+  static async assertLinkablePublishedArticle(ctx: RequestContext, articleId: string) {
+    const article = await this.getById(ctx, articleId);
+    if (!article || article.status !== "published") {
+      throw new Error("Published article required");
+    }
+    return article;
+  }
+
   static async listForAdmin(ctx: RequestContext) {
     requirePermission(ctx, "kb:manage");
     return db.query.knowledgeArticle.findMany({
@@ -155,30 +200,14 @@ export class KnowledgeRepository {
       throw new Error("Published article required");
     }
 
-    return withTenantContext(ctx, async (tx) => {
-      const [link] = await tx
-        .insert(ticketKnowledgeLink)
-        .values({
-          organizationId: ctx.orgId,
-          ticketId,
-          articleId,
-          linkedById: ctx.userId,
-          linkType,
-          ticketEventId: ticketEventId ?? null,
-        })
-        .returning();
-
-      await tx.insert(auditEvent).values({
-        organizationId: ctx.orgId,
-        actorId: ctx.userId,
-        action: "kb.linked_to_ticket",
-        resourceType: "ticket",
-        resourceId: ticketId,
-        metadata: { articleId, linkType },
-      });
-
-      return link;
-    });
+    return withTenantContext(ctx, async (tx) =>
+      this.insertTicketLinkInTx(tx, ctx, {
+        ticketId,
+        articleId,
+        linkType,
+        ticketEventId,
+      })
+    );
   }
 
   static async listLinksForTicket(ctx: RequestContext, ticketId: string) {

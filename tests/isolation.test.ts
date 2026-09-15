@@ -326,7 +326,9 @@ describe("Tenant Isolation Tests", () => {
         LEFT JOIN pg_policy p ON p.polrelid = c.oid
         WHERE c.relname IN ('ticket', 'organization_membership', 'invitation', 
                             'organization_branding', 'audit_event', 'ticket_event',
-                            'ticket_attachment', 'email_outbox')
+                            'ticket_attachment', 'email_outbox',
+                            'catalog_item', 'catalog_order', 'service_request_approval',
+                            'knowledge_article', 'ticket_knowledge_link')
         GROUP BY c.relname, c.relrowsecurity, c.relforcerowsecurity
         ORDER BY c.relname
       `);

@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { ticket, ticketEvent, auditEvent } from "@/db/schema";
 import { eq, and, desc, isNull, notInArray } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
-import { ForbiddenError, hasPermission } from "@/lib/auth/context";
+import { ForbiddenError, hasPermission, requirePermission } from "@/lib/auth/context";
 import type { TicketStatus } from "@/lib/domain/ticketStatus";
 import {
   assertTransition,
@@ -242,6 +242,12 @@ export class TicketRepository {
     const kind: TicketEventKind =
       visibility === "internal" ? "comment_internal" : "comment_public";
 
+    if (options?.knowledgeArticleId && visibility === "public") {
+      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+      requirePermission(ctx, "kb:link");
+      await KnowledgeRepository.assertLinkablePublishedArticle(ctx, options.knowledgeArticleId);
+    }
+
     const event = await withTenantContext(ctx, async (tx) => {
       const updates: Record<string, Date | null> = { updatedAt: new Date() };
       if (!existing.firstResponseAt && hasPermission(ctx, "ticket:read_org")) {
@@ -273,19 +279,18 @@ export class TicketRepository {
         metadata: { visibility },
       });
 
+      if (options?.knowledgeArticleId && visibility === "public") {
+        const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+        await KnowledgeRepository.insertTicketLinkInTx(tx, ctx, {
+          ticketId,
+          articleId: options.knowledgeArticleId,
+          linkType: "reply",
+          ticketEventId: row.id,
+        });
+      }
+
       return row;
     });
-
-    if (options?.knowledgeArticleId && visibility === "public") {
-      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
-      await KnowledgeRepository.linkToTicket(
-        ctx,
-        ticketId,
-        options.knowledgeArticleId,
-        "reply",
-        event.id
-      );
-    }
 
     if (
       visibility === "public" &&
@@ -391,6 +396,12 @@ export class TicketRepository {
       assertTransition(from, newStatus);
     }
 
+    if (options?.knowledgeArticleId && newStatus === "resolved") {
+      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+      requirePermission(ctx, "kb:link");
+      await KnowledgeRepository.assertLinkablePublishedArticle(ctx, options.knowledgeArticleId);
+    }
+
     const result = await withTenantContext(ctx, async (tx) => {
       const updates: {
         status: TicketStatus;
@@ -440,20 +451,19 @@ export class TicketRepository {
         })
         .returning();
 
-      return { updated, statusEvent };
+      if (options?.knowledgeArticleId && newStatus === "resolved") {
+        const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+        await KnowledgeRepository.insertTicketLinkInTx(tx, ctx, {
+          ticketId,
+          articleId: options.knowledgeArticleId,
+          linkType: "resolve",
+          ticketEventId: statusEvent.id,
+        });
+      }
+
+      return updated;
     });
 
-    if (options?.knowledgeArticleId && newStatus === "resolved") {
-      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
-      await KnowledgeRepository.linkToTicket(
-        ctx,
-        ticketId,
-        options.knowledgeArticleId,
-        "resolve",
-        result.statusEvent.id
-      );
-    }
-
-    return result.updated;
+    return result;
   }
 }

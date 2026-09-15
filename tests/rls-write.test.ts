@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import postgres from "postgres";
 import { db } from "@/db";
-import { organization, user, ticket } from "@/db/schema";
+import {
+  organization,
+  user,
+  ticket,
+  catalogItem,
+  knowledgeArticle,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { readFileSync } from "fs";
 import path from "path";
@@ -77,6 +83,123 @@ describe("RLS wrong-org write (non-superuser)", () => {
             organization_id, to_address, subject, template_key, payload, status
           ) VALUES (
             ${orgBId}, 'probe@example.com', 'RLS', 'invitation', '{}', 'pending'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects catalog_item insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO catalog_item (
+            organization_id, name, description, form_schema, fulfillment_queue
+          ) VALUES (
+            ${orgBId}, 'RLS probe', 'should fail', '[]', 'general'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects knowledge_article insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO knowledge_article (
+            organization_id, title, body, status, author_id
+          ) VALUES (
+            ${orgBId}, 'RLS probe', 'body', 'draft', ${requesterAId}
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects catalog_order insert for wrong organization", async () => {
+    const ticketRow = await db.query.ticket.findFirst({
+      where: eq(ticket.organizationId, orgAId),
+    });
+    const itemRow = await db.query.catalogItem.findFirst({
+      where: eq(catalogItem.organizationId, orgAId),
+    });
+    if (!ticketRow || !itemRow) throw new Error("seed catalog/ticket missing");
+
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO catalog_order (
+            organization_id, catalog_item_id, ticket_id, form_responses
+          ) VALUES (
+            ${orgBId}, ${itemRow.id}, ${ticketRow.id}, '{}'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects service_request_approval insert for wrong organization", async () => {
+    const ticketRow = await db.query.ticket.findFirst({
+      where: eq(ticket.organizationId, orgAId),
+    });
+    const adminA = await db.query.user.findFirst({
+      where: eq(user.email, "admin@org-a.test"),
+    });
+    if (!ticketRow || !adminA) throw new Error("seed missing");
+
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO service_request_approval (
+            organization_id, ticket_id, approver_user_id, status
+          ) VALUES (
+            ${orgBId}, ${ticketRow.id}, ${adminA.id}, 'pending'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects ticket_knowledge_link insert for wrong organization", async () => {
+    const ticketRow = await db.query.ticket.findFirst({
+      where: eq(ticket.organizationId, orgAId),
+    });
+    const article = await db.query.knowledgeArticle.findFirst({
+      where: eq(knowledgeArticle.organizationId, orgAId),
+    });
+    const agentA = await db.query.user.findFirst({
+      where: eq(user.email, "agent@org-a.test"),
+    });
+    if (!ticketRow || !article || !agentA) throw new Error("seed missing");
+
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO ticket_knowledge_link (
+            organization_id, ticket_id, article_id, linked_by_id, link_type
+          ) VALUES (
+            ${orgBId}, ${ticketRow.id}, ${article.id}, ${agentA.id}, 'reply'
           )
         `
       ).rejects.toThrow();
