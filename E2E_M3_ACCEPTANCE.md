@@ -2,7 +2,7 @@
 
 **Run at:** 2026-09-15T22:41:43.768Z
 **Base URL:** http://127.0.0.1:43123
-**App commit:** 8bd1604f0ae8b58751e8be5c566535acd8d87d55
+**App commit:** `fe4007e1fd82901c3412c95b35a86f0896023009`
 **Runner:** Playwright Chromium (headless) in Cloud Agent VM
 
 **Auth in E2E:** Browser `fetch` to `/api/auth/sign-in/email` with `credentials: include` (same-origin session cookies as the app). UI form submit was not used because dev HMR prevents reliable client hydration in headless runs.
