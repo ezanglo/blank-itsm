@@ -4,14 +4,19 @@
  */
 import "dotenv/config";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, readdir, writeFile } from "fs/promises";
 import path from "path";
 import postgres from "postgres";
+import { execSync } from "child_process";
 
 const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:43123";
 const PASSWORD = "password123";
 const SHOT_DIR = path.join(process.cwd(), "e2e-screenshots");
+const M4_SHOT_DIR = path.join(SHOT_DIR, "m4");
 const REPORT_PATH = path.join(process.cwd(), "E2E_M3_ACCEPTANCE.md");
+const M4_REPORT_PATH = path.join(process.cwd(), "E2E_M4_ACCEPTANCE.md");
+const EMAIL_MOCK_DIR =
+  process.env.EMAIL_MOCK_DIR ?? path.join(process.cwd(), ".data", "email-outbox");
 
 type ScenarioResult = {
   id: string;
@@ -27,6 +32,13 @@ async function shot(page: Page, name: string) {
   const file = `${name}.png`;
   await page.screenshot({ path: path.join(SHOT_DIR, file), fullPage: true });
   return file;
+}
+
+async function shotM4(page: Page, name: string) {
+  await mkdir(M4_SHOT_DIR, { recursive: true });
+  const file = `${name}.png`;
+  await page.screenshot({ path: path.join(M4_SHOT_DIR, file), fullPage: true });
+  return `m4/${file}`;
 }
 
 /** Browser fetch sign-in (same origin/cookies as auth client). */
@@ -74,15 +86,43 @@ async function getOrgBTicketId(): Promise<string | null> {
   }
 }
 
+async function getOrgARequesterTicketId(): Promise<string | null> {
+  const sql = postgres(process.env.DATABASE_URL!);
+  try {
+    const rows = await sql<{ id: string }[]>`
+      SELECT t.id
+      FROM ticket t
+      INNER JOIN organization o ON o.id = t.organization_id
+      INNER JOIN "user" u ON u.id = t.requester_id
+      WHERE o.slug = 'org-a' AND u.email = 'requester@org-a.test'
+      ORDER BY t.created_at DESC
+      LIMIT 1
+    `;
+    return rows[0]?.id ?? null;
+  } finally {
+    await sql.end();
+  }
+}
+
 function record(r: ScenarioResult) {
   results.push(r);
   console.log(`[${r.status}] ${r.id}: ${r.title} — ${r.notes}`);
 }
 
+const m4Results: ScenarioResult[] = [];
+
+function recordM4(r: ScenarioResult) {
+  m4Results.push(r);
+  record(r);
+}
+
 async function main() {
   await mkdir(SHOT_DIR, { recursive: true });
+  await mkdir(M4_SHOT_DIR, { recursive: true });
+  await mkdir(EMAIL_MOCK_DIR, { recursive: true });
 
   const orgBTicketId = await getOrgBTicketId();
+  const orgARequesterTicketId = await getOrgARequesterTicketId();
 
   const browser = await chromium.launch({ headless: true });
 
@@ -316,14 +356,9 @@ async function main() {
   try {
     const ctxAgent = await newContext(browser);
     const agentPage = await ctxAgent.newPage();
+    if (!orgARequesterTicketId) throw new Error("no Org A requester ticket in database");
     await signIn(agentPage, "agent@org-a.test");
-    await agentPage.goto(`${BASE}/agent`);
-    await agentPage.waitForURL(/\/agent/, { timeout: 15_000 });
-    const ticketLink = agentPage.locator('a[href^="/agent/tickets/"]').first();
-    await ticketLink.waitFor({ timeout: 15_000 });
-    const href = await ticketLink.getAttribute("href");
-    if (!href) throw new Error("no agent ticket link");
-    await agentPage.goto(`${BASE}${href}`);
+    await agentPage.goto(`${BASE}/agent/tickets/${orgARequesterTicketId}`);
     const internalMarker = `e2e-internal-${Date.now()}`;
     await agentPage.getByLabel(/internal note/i).fill(internalMarker);
     await agentPage.getByRole("button", { name: /internal note/i }).click();
@@ -332,32 +367,187 @@ async function main() {
     const ctxReq = await newContext(browser);
     const reqPage = await ctxReq.newPage();
     await signIn(reqPage, "requester@org-a.test");
-    const portalHref = href.replace("/agent/tickets/", "/portal/tickets/");
-    await reqPage.goto(`${BASE}${portalHref}`);
+    await reqPage.goto(`${BASE}/portal/tickets/${orgARequesterTicketId}`);
     const portalContent = await reqPage.content();
     const hidden = !portalContent.includes(internalMarker);
-    const s7 = await shot(reqPage, "07-m4-internal-hidden");
-    record({
+    const s7 = await shotM4(reqPage, "01-internal-note-hidden-portal");
+    const s7Result = {
       id: "S7",
       title: "M4 internal notes hidden from requester portal",
       status: hidden ? "PASS" : "FAIL",
       notes: `internal marker visible on portal=${!hidden}`,
       screenshot: s7,
+    } as ScenarioResult;
+    record(s7Result);
+    recordM4({
+      id: "M4-1",
+      title: "Internal notes hidden on requester portal (S7)",
+      status: s7Result.status,
+      notes: s7Result.notes,
+      screenshot: s7,
     });
     await ctxAgent.close();
     await ctxReq.close();
   } catch (e) {
-    record({
-      id: "S7",
-      title: "M4 internal notes hidden from requester portal",
+    recordM4({
+      id: "M4-1",
+      title: "Internal notes hidden on requester portal (S7)",
       status: "FAIL",
       notes: String(e),
     });
   }
 
+  // --- M4-2 SLA panel on agent ticket ---
+  try {
+    const ctx = await newContext(browser);
+    const page = await ctx.newPage();
+    if (!orgARequesterTicketId) throw new Error("no Org A requester ticket");
+    await signIn(page, "agent@org-a.test");
+    await page.goto(`${BASE}/agent/tickets/${orgARequesterTicketId}`);
+    const content = await page.content();
+    const slaOk =
+      content.includes("SLA") &&
+      (content.includes("First response due") || content.includes("Resolution due"));
+    const s = await shotM4(page, "02-sla-panel-agent");
+    recordM4({
+      id: "M4-2",
+      title: "SLA panel on agent ticket detail",
+      status: slaOk ? "PASS" : "FAIL",
+      notes: slaOk ? "SLA section and due fields present" : "SLA panel not found",
+      screenshot: s,
+    });
+    await ctx.close();
+  } catch (e) {
+    recordM4({
+      id: "M4-2",
+      title: "SLA panel on agent ticket detail",
+      status: "FAIL",
+      notes: String(e),
+    });
+  }
+
+  // --- M4-3 Attachment upload + download ---
+  try {
+    const ctx = await newContext(browser);
+    const page = await ctx.newPage();
+    if (!orgARequesterTicketId) throw new Error("no Org A requester ticket");
+    await signIn(page, "agent@org-a.test");
+    await page.goto(`${BASE}/agent/tickets/${orgARequesterTicketId}`);
+    const fileName = `e2e-attach-${Date.now()}.txt`;
+    await page.locator('input[type="file"][name="file"]').setInputFiles({
+      name: fileName,
+      mimeType: "text/plain",
+      buffer: Buffer.from("M4 e2e attachment body"),
+    });
+    await page.getByRole("button", { name: /^attach$/i }).click();
+    await page.waitForTimeout(1500);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const link = page.locator(`a[href^="/api/attachments/"]`).filter({ hasText: fileName });
+    await link.waitFor({ timeout: 10_000 });
+    const attachHref = await link.getAttribute("href");
+    const download = await page.request.get(`${BASE}${attachHref}`);
+    const body = await download.text();
+    const ok = download.ok() && body.includes("M4 e2e attachment");
+    const s = await shotM4(page, "03-attachment-upload");
+    recordM4({
+      id: "M4-3",
+      title: "Attachment upload and download",
+      status: ok ? "PASS" : "FAIL",
+      notes: `listed=${!!attachHref}, download=${download.status()}, bodyMatch=${body.includes("M4 e2e")}`,
+      screenshot: s,
+    });
+    await ctx.close();
+  } catch (e) {
+    recordM4({
+      id: "M4-3",
+      title: "Attachment upload and download",
+      status: "FAIL",
+      notes: String(e),
+    });
+  }
+
+  // --- M4-4 Mock email outbox (.eml) on admin invite ---
+  try {
+    const before = new Set(await readdir(EMAIL_MOCK_DIR).catch(() => []));
+    const ctx = await newContext(browser);
+    const page = await ctx.newPage();
+    await signIn(page, "admin@org-a.test");
+    await page.goto(`${BASE}/admin/users`);
+    const inviteEmail = `e2e-invite-${Date.now()}@example.com`;
+    await page.locator("#email").fill(inviteEmail);
+    await page.getByRole("button", { name: /^invite$/i }).click();
+    await page.waitForTimeout(2500);
+    const after = await readdir(EMAIL_MOCK_DIR);
+    const newEml = after.filter((f) => f.endsWith(".eml") && !before.has(f));
+    const s = await shotM4(page, "04-mock-email-invite");
+    recordM4({
+      id: "M4-4",
+      title: "Mock email outbox writes .eml on invite (no Resend)",
+      status: newEml.length > 0 ? "PASS" : "FAIL",
+      notes:
+        newEml.length > 0
+          ? `New files: ${newEml.join(", ")} in ${EMAIL_MOCK_DIR}`
+          : `No new .eml in ${EMAIL_MOCK_DIR} (invite may need role field)`,
+      screenshot: s,
+    });
+    await ctx.close();
+  } catch (e) {
+    recordM4({
+      id: "M4-4",
+      title: "Mock email outbox writes .eml on invite",
+      status: "FAIL",
+      notes: String(e),
+    });
+  }
+
+  // --- M4-5 Impact × urgency → Critical priority ---
+  try {
+    const ctx = await newContext(browser);
+    const page = await ctx.newPage();
+    await signIn(page, "requester@org-a.test");
+    await page.goto(`${BASE}/portal/tickets/new`);
+    const subject = `E2E M4 critical ${Date.now()}`;
+    await page.locator("#subject").fill(subject);
+    await page.locator("#description").fill("High impact and urgency for priority matrix.");
+    await page.locator("#impact").selectOption("high");
+    await page.locator("#urgency").selectOption("high");
+    await page.locator("form button[type='submit']").click();
+    await page.waitForURL(/\/portal\/tickets\//, { timeout: 20_000 });
+    const content = await page.content();
+    const priorityOk = /critical/i.test(content);
+    const s = await shotM4(page, "05-impact-urgency-critical");
+    recordM4({
+      id: "M4-5",
+      title: "Impact × urgency sets Critical priority on ticket",
+      status: priorityOk ? "PASS" : "FAIL",
+      notes: priorityOk ? "Critical badge visible on ticket detail" : "Critical priority not shown",
+      screenshot: s,
+    });
+    await ctx.close();
+  } catch (e) {
+    recordM4({
+      id: "M4-5",
+      title: "Impact × urgency sets Critical priority",
+      status: "FAIL",
+      notes: String(e),
+    });
+  }
+
+  // --- M4-6 Cross-tenant smoke (reuse S5 outcome) ---
+  const s5 = results.find((r) => r.id === "S5");
+  recordM4({
+    id: "M4-6",
+    title: "Cross-tenant ticket URL blocked (smoke)",
+    status: s5?.status ?? "SKIP",
+    notes: s5?.notes ?? "S5 not run",
+    screenshot: s5?.screenshot?.includes("m4/") ? s5.screenshot : "05-cross-tenant-404.png",
+  });
+
   await browser.close();
 
-  const sha = process.env.E2E_GIT_SHA ?? "unknown";
+  const sha =
+    process.env.E2E_GIT_SHA ??
+    execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
   const lines = [
     "# M3/M4 Founder acceptance — in-VM E2E",
     "",
@@ -391,6 +581,49 @@ async function main() {
 
   await writeFile(REPORT_PATH, lines.join("\n"));
   console.log(`\nWrote ${REPORT_PATH}`);
+
+  const m4Pass = m4Results.filter((r) => r.status === "PASS").length;
+  const m4Lines = [
+    "# M4 Service Desk — in-VM E2E acceptance",
+    "",
+    `**Run at:** ${new Date().toISOString()}`,
+    `**Base URL:** ${BASE}`,
+    `**App commit:** \`${sha}\``,
+    `**Branch:** \`cursor/m4-service-desk-core-4831\``,
+    `**Runner:** Playwright Chromium (headless); dev server \`npm run dev\` on port 43123`,
+    `**Database:** \`${process.env.DATABASE_URL ?? "from .env"}\``,
+    "",
+    "**Auth:** Browser \`fetch\` to \`/api/auth/sign-in/email\` with \`credentials: include\` (same as M3 E2E).",
+    "",
+    "## M4 summary",
+    "",
+    `**${m4Pass}/${m4Results.length}** scenarios passed.`,
+    "",
+    "| ID | Scenario | Result | Screenshot |",
+    "|----|----------|--------|------------|",
+    ...m4Results.map(
+      (r) =>
+        `| ${r.id} | ${r.title} | **${r.status}** | ${r.screenshot ?? "—"} |`
+    ),
+    "",
+    "## Evidence paths",
+    "",
+    "- Report: `E2E_M4_ACCEPTANCE.md` (this file)",
+    "- Screenshots: `e2e-screenshots/m4/*.png`",
+    `- Mock email files: \`${EMAIL_MOCK_DIR}\` (*.eml)`,
+    "- Full M3 regression log: `E2E_M3_ACCEPTANCE.md`",
+    "",
+    "## Notes",
+    "",
+    ...m4Results.map((r) => `### ${r.id} — ${r.status}\n${r.notes}\n`),
+    "",
+    "## Credentials",
+    "",
+    "`*@org-a.test` / `*@org-b.test` with password `password123`.",
+    "",
+  ];
+  await writeFile(M4_REPORT_PATH, m4Lines.join("\n"));
+  console.log(`Wrote ${M4_REPORT_PATH}`);
 }
 
 main().catch((err) => {

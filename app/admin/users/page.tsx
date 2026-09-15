@@ -42,6 +42,7 @@ export default async function UsersPage() {
         </CardHeader>
         <CardContent>
           <form action={inviteUser} className="flex gap-4">
+            <input type="hidden" name="role" value="requester" />
             <div className="flex-1 space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

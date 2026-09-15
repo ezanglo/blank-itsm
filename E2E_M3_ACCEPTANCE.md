@@ -1,13 +1,9 @@
-# M3 Founder acceptance — in-VM E2E
+# M3/M4 Founder acceptance — in-VM E2E
 
-**Run at:** 2026-09-15T22:41:43.768Z
+**Run at:** 2026-09-15T23:09:44.504Z
 **Base URL:** http://127.0.0.1:43123
-**App commit:** `fe4007e1fd82901c3412c95b35a86f0896023009`
+**App commit:** 093921dfe15c0fa06018c6bb2d02f8e796c23434
 **Runner:** Playwright Chromium (headless) in Cloud Agent VM
-
-**Auth in E2E:** Browser `fetch` to `/api/auth/sign-in/email` with `credentials: include` (same-origin session cookies as the app). UI form submit was not used because dev HMR prevents reliable client hydration in headless runs.
-
-**Dev server:** `npm run dev` on port 43123 (tmux `itsm-dev-server`) — left running for Tester.
 
 ## Summary
 
@@ -19,6 +15,13 @@
 | S4 | Agent queue → claim → status update | **PASS** | 04-agent-claim-status.png |
 | S5 | Cross-tenant Org B ticket URL blocked for Org A | **PASS** | 05-cross-tenant-404.png |
 | S6 | Org B branding + requester cannot access /agent; Org A isolated from B branding | **PASS** | 06-org-b-branding.png, 06-requester-no-agent.png |
+| S7 | M4 internal notes hidden from requester portal | **PASS** | m4/01-internal-note-hidden-portal.png |
+| M4-1 | Internal notes hidden on requester portal (S7) | **PASS** | m4/01-internal-note-hidden-portal.png |
+| M4-2 | SLA panel on agent ticket detail | **PASS** | m4/02-sla-panel-agent.png |
+| M4-3 | Attachment upload and download | **PASS** | m4/03-attachment-upload.png |
+| M4-4 | Mock email outbox writes .eml on invite (no Resend) | **PASS** | m4/04-mock-email-invite.png |
+| M4-5 | Impact × urgency sets Critical priority on ticket | **PASS** | m4/05-impact-urgency-critical.png |
+| M4-6 | Cross-tenant ticket URL blocked (smoke) | **PASS** | 05-cross-tenant-404.png |
 
 ## Notes
 
@@ -29,16 +32,37 @@ refresh portal=true, admin=true, url=http://127.0.0.1:43123/admin/users
 Logo URL present on portal header
 
 ### S3 — PASS
-Found "E2E M3 ticket 1789512095948"
+Found "E2E M3 ticket 1789513763443"
 
 ### S4 — PASS
 Claimed ticket and updated/viewed status
 
 ### S5 — PASS
-HTTP 404, blocked=true, ticket=6b860ff6-a8ee-4b61-bf39-91f674ce84d3
+HTTP 404, blocked=true, ticket=2d60fa62-eb25-43e8-a4c1-2ca04d565fd9
 
 ### S6 — PASS
 orgB branding=true, requester agent block=true (url=http://127.0.0.1:43123/sign-in?error=unknown), orgA no B logo=true
+
+### S7 — PASS
+internal marker visible on portal=false
+
+### M4-1 — PASS
+internal marker visible on portal=false
+
+### M4-2 — PASS
+SLA section and due fields present
+
+### M4-3 — PASS
+listed=true, download=200, bodyMatch=true
+
+### M4-4 — PASS
+New files: 2026-09-15T23-09-40-632Z-e2e-invite-1789513780547@example.com.eml in .data/email-outbox
+
+### M4-5 — PASS
+Critical badge visible on ticket detail
+
+### M4-6 — PASS
+HTTP 404, blocked=true, ticket=2d60fa62-eb25-43e8-a4c1-2ca04d565fd9
 
 
 ## Screenshots
