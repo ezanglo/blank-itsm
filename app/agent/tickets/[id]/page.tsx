@@ -3,7 +3,6 @@ import { TicketRepository } from "@/lib/repositories/ticketRepository";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STATUS_LABELS, STATUS_COLORS, getAllowedNextStatuses, type TicketStatus } from "@/lib/domain/ticketStatus";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -133,18 +132,18 @@ export default async function AgentTicketDetailPage({
               <div>
                 <h3 className="font-semibold mb-2">Update Status</h3>
                 <form action={updateStatus.bind(null, id)} className="flex gap-2">
-                  <Select name="status" required>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allowedStatuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    name="status"
+                    required
+                    className="flex h-8 w-[200px] rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+                    defaultValue={allowedStatuses[0]}
+                  >
+                    {allowedStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
                   <Button type="submit">Update</Button>
                 </form>
               </div>

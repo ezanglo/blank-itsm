@@ -65,25 +65,13 @@ export default async function BrandingPage() {
 
             <div className="space-y-2">
               <Label htmlFor="primary">Primary Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="primary"
-                  name="primary"
-                  type="text"
-                  placeholder="hsl(221, 83%, 53%)"
-                  defaultValue={branding?.tokens?.primary || ""}
-                  className="flex-1"
-                />
-                <Input
-                  type="color"
-                  className="w-16 h-10"
-                  onChange={(e) => {
-                    // Convert hex to HSL (simplified for demo)
-                    const input = document.getElementById("primary") as HTMLInputElement;
-                    input.value = e.target.value;
-                  }}
-                />
-              </div>
+              <Input
+                id="primary"
+                name="primary"
+                type="text"
+                placeholder="hsl(221, 83%, 53%)"
+                defaultValue={branding?.tokens?.primary || ""}
+              />
               <p className="text-sm text-muted-foreground">
                 Primary brand color (HSL format, e.g., hsl(221, 83%, 53%))
               </p>
@@ -91,24 +79,13 @@ export default async function BrandingPage() {
 
             <div className="space-y-2">
               <Label htmlFor="primaryForeground">Primary Foreground Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="primaryForeground"
-                  name="primaryForeground"
-                  type="text"
-                  placeholder="hsl(0, 0%, 100%)"
-                  defaultValue={branding?.tokens?.primaryForeground || ""}
-                  className="flex-1"
-                />
-                <Input
-                  type="color"
-                  className="w-16 h-10"
-                  onChange={(e) => {
-                    const input = document.getElementById("primaryForeground") as HTMLInputElement;
-                    input.value = e.target.value;
-                  }}
-                />
-              </div>
+              <Input
+                id="primaryForeground"
+                name="primaryForeground"
+                type="text"
+                placeholder="hsl(0, 0%, 100%)"
+                defaultValue={branding?.tokens?.primaryForeground || ""}
+              />
               <p className="text-sm text-muted-foreground">
                 Text color on primary background (HSL format, e.g., hsl(0, 0%, 100%))
               </p>

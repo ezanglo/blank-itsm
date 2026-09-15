@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 async function createTicket(formData: FormData) {
   "use server";
@@ -47,15 +47,16 @@ export default async function NewTicketPage() {
           <form action={createTicket} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="type">Type *</Label>
-              <Select name="type" required defaultValue="incident">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="incident">Incident</SelectItem>
-                  <SelectItem value="service_request">Service Request</SelectItem>
-                </SelectContent>
-              </Select>
+              <select
+                id="type"
+                name="type"
+                required
+                defaultValue="incident"
+                className="flex h-8 w-full rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+              >
+                <option value="incident">Incident</option>
+                <option value="service_request">Service Request</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -81,25 +82,25 @@ export default async function NewTicketPage() {
 
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
-              <Select name="priority" defaultValue="medium">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
+              <select
+                id="priority"
+                name="priority"
+                defaultValue="medium"
+                className="flex h-8 w-full rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
             </div>
 
             <div className="flex gap-4">
               <Button type="submit" className="flex-1">
                 Submit Ticket
               </Button>
-              <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                Cancel
+              <Button type="button" variant="outline" asChild>
+                <Link href="/portal/tickets">Cancel</Link>
               </Button>
             </div>
           </form>

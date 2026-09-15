@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx db/seed.ts",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:e2e": "tsx scripts/m3-e2e-acceptance.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -47,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "happy-dom": "^20.14.5",
+    "playwright": "^1.51.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
