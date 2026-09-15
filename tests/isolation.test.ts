@@ -262,6 +262,7 @@ describe("Tenant Isolation Tests", () => {
           roleId: agentRole.id,
           permissions: new Set([
             "ticket:claim",
+            "ticket:read_org",
             "agent:access",
           ]),
         };
@@ -324,7 +325,8 @@ describe("Tenant Isolation Tests", () => {
         FROM pg_class c
         LEFT JOIN pg_policy p ON p.polrelid = c.oid
         WHERE c.relname IN ('ticket', 'organization_membership', 'invitation', 
-                            'organization_branding', 'audit_event', 'ticket_event')
+                            'organization_branding', 'audit_event', 'ticket_event',
+                            'ticket_attachment', 'email_outbox')
         GROUP BY c.relname, c.relrowsecurity, c.relforcerowsecurity
         ORDER BY c.relname
       `);

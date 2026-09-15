@@ -34,6 +34,16 @@ async function seed() {
       name: "Update Ticket Status",
       description: "Can update ticket status",
     },
+    {
+      key: "ticket:comment_public",
+      name: "Public Ticket Comment",
+      description: "Can add public replies visible to requesters",
+    },
+    {
+      key: "ticket:comment_internal",
+      name: "Internal Ticket Note",
+      description: "Can add internal notes",
+    },
     { key: "ticket:assign", name: "Assign Ticket", description: "Can assign tickets" },
     { key: "user:invite", name: "Invite User", description: "Can invite users" },
     {
@@ -103,6 +113,7 @@ async function seed() {
     // Requester permissions
     { roleKey: "requester", permissionKey: "ticket:create" },
     { roleKey: "requester", permissionKey: "ticket:read_own" },
+    { roleKey: "requester", permissionKey: "ticket:comment_public" },
     { roleKey: "requester", permissionKey: "portal:access" },
     { roleKey: "requester", permissionKey: "branding:read" },
 
@@ -112,6 +123,8 @@ async function seed() {
     { roleKey: "agent", permissionKey: "ticket:read_org" },
     { roleKey: "agent", permissionKey: "ticket:claim" },
     { roleKey: "agent", permissionKey: "ticket:update_status" },
+    { roleKey: "agent", permissionKey: "ticket:comment_public" },
+    { roleKey: "agent", permissionKey: "ticket:comment_internal" },
     { roleKey: "agent", permissionKey: "ticket:assign" },
     { roleKey: "agent", permissionKey: "agent:access" },
     { roleKey: "agent", permissionKey: "portal:access" },
@@ -123,6 +136,8 @@ async function seed() {
     { roleKey: "admin", permissionKey: "ticket:read_org" },
     { roleKey: "admin", permissionKey: "ticket:claim" },
     { roleKey: "admin", permissionKey: "ticket:update_status" },
+    { roleKey: "admin", permissionKey: "ticket:comment_public" },
+    { roleKey: "admin", permissionKey: "ticket:comment_internal" },
     { roleKey: "admin", permissionKey: "ticket:assign" },
     { roleKey: "admin", permissionKey: "user:invite" },
     { roleKey: "admin", permissionKey: "user:role_change" },

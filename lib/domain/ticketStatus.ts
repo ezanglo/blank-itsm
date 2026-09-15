@@ -26,12 +26,20 @@ export const STATUS_COLORS: Record<TicketStatus, string> = {
   closed: "bg-gray-100 text-gray-800",
 };
 
-// Allowed transitions
+// Allowed transitions (agents); requesters may only reopen via portal where permitted
 const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
-  open: ["in_progress", "closed"],
-  in_progress: ["resolved", "open"],
+  open: ["in_progress", "resolved", "closed"],
+  in_progress: ["resolved", "open", "closed"],
   resolved: ["closed", "open"],
-  closed: ["open"], // Can reopen if needed
+  closed: ["open"],
+};
+
+/** Requester-initiated transitions (e.g. reopen closed ticket). */
+const REQUESTER_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  open: [],
+  in_progress: [],
+  resolved: [],
+  closed: ["open"],
 };
 
 /**
@@ -47,6 +55,16 @@ export function canTransition(from: TicketStatus, to: TicketStatus): boolean {
  */
 export function getAllowedNextStatuses(current: TicketStatus): TicketStatus[] {
   return TRANSITIONS[current];
+}
+
+export function getAllowedRequesterNextStatuses(current: TicketStatus): TicketStatus[] {
+  return REQUESTER_TRANSITIONS[current];
+}
+
+export function assertTransition(from: TicketStatus, to: TicketStatus): void {
+  if (!canTransition(from, to)) {
+    throw new Error(`Invalid status transition from ${from} to ${to}`);
+  }
 }
 
 /**

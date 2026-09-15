@@ -7,6 +7,7 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 - **Multi-tenant Architecture**: Secure row-level tenant isolation with automated tests
 - **Role-Based Access Control**: Requester, Agent, and Admin roles with granular permissions
 - **Ticket Management**: Create, list, view, and manage incident and service request tickets
+- **Service Desk (M4)**: Ticket timeline with public replies vs internal notes, impact×urgency priority, SLA timers, local file attachments, and outbox email (mock transport in dev)
 - **Agent Queue**: Unassigned and "My Tickets" views with claim/assign functionality
 - **Organization Branding**: Customizable logos and theme colors per organization
 - **Audit Trail**: Comprehensive audit logging for security-sensitive actions
@@ -77,6 +78,9 @@ docker-compose up -d
 
 ```bash
 npm run db:push
+# Apply RLS SQL for M4 tables (if not already applied)
+psql "$DATABASE_URL" -f db/migrations/0005_m4_service_desk.sql
+psql "$DATABASE_URL" -f db/migrations/0006_itsm_app_role.sql
 ```
 
 6. **Seed the database**

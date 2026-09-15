@@ -36,6 +36,8 @@ yarn-error.log*
 
 # uploads folder (documentation)
 /uploads
+.data/
+.vitest-env.json
 
 # vercel
 .vercel

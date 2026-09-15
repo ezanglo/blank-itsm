@@ -4,6 +4,7 @@ import { organization, organizationMembership, invitation } from "./organization
 import { role, permission, rolePermission } from "./rbac";
 import { organizationBranding } from "./branding";
 import { ticket, ticketEvent } from "./tickets";
+import { ticketAttachment } from "./attachments";
 import { auditEvent } from "./audit";
 
 // User relations
@@ -128,6 +129,22 @@ export const ticketRelations = relations(ticket, ({ one, many }) => ({
     relationName: "assignee",
   }),
   events: many(ticketEvent),
+  attachments: many(ticketAttachment),
+}));
+
+export const ticketAttachmentRelations = relations(ticketAttachment, ({ one }) => ({
+  organization: one(organization, {
+    fields: [ticketAttachment.organizationId],
+    references: [organization.id],
+  }),
+  ticket: one(ticket, {
+    fields: [ticketAttachment.ticketId],
+    references: [ticket.id],
+  }),
+  uploadedBy: one(user, {
+    fields: [ticketAttachment.uploadedById],
+    references: [user.id],
+  }),
 }));
 
 export const ticketEventRelations = relations(ticketEvent, ({ one }) => ({

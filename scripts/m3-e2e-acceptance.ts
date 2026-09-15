@@ -312,11 +312,54 @@ async function main() {
     });
   }
 
+  // --- 7 M4: agent internal note hidden from requester portal ---
+  try {
+    const ctxAgent = await newContext(browser);
+    const agentPage = await ctxAgent.newPage();
+    await signIn(agentPage, "agent@org-a.test");
+    await agentPage.goto(`${BASE}/agent`);
+    await agentPage.waitForURL(/\/agent/, { timeout: 15_000 });
+    const ticketLink = agentPage.locator('a[href^="/agent/tickets/"]').first();
+    await ticketLink.waitFor({ timeout: 15_000 });
+    const href = await ticketLink.getAttribute("href");
+    if (!href) throw new Error("no agent ticket link");
+    await agentPage.goto(`${BASE}${href}`);
+    const internalMarker = `e2e-internal-${Date.now()}`;
+    await agentPage.getByLabel(/internal note/i).fill(internalMarker);
+    await agentPage.getByRole("button", { name: /internal note/i }).click();
+    await agentPage.waitForTimeout(800);
+
+    const ctxReq = await newContext(browser);
+    const reqPage = await ctxReq.newPage();
+    await signIn(reqPage, "requester@org-a.test");
+    const portalHref = href.replace("/agent/tickets/", "/portal/tickets/");
+    await reqPage.goto(`${BASE}${portalHref}`);
+    const portalContent = await reqPage.content();
+    const hidden = !portalContent.includes(internalMarker);
+    const s7 = await shot(reqPage, "07-m4-internal-hidden");
+    record({
+      id: "S7",
+      title: "M4 internal notes hidden from requester portal",
+      status: hidden ? "PASS" : "FAIL",
+      notes: `internal marker visible on portal=${!hidden}`,
+      screenshot: s7,
+    });
+    await ctxAgent.close();
+    await ctxReq.close();
+  } catch (e) {
+    record({
+      id: "S7",
+      title: "M4 internal notes hidden from requester portal",
+      status: "FAIL",
+      notes: String(e),
+    });
+  }
+
   await browser.close();
 
   const sha = process.env.E2E_GIT_SHA ?? "unknown";
   const lines = [
-    "# M3 Founder acceptance — in-VM E2E",
+    "# M3/M4 Founder acceptance — in-VM E2E",
     "",
     `**Run at:** ${new Date().toISOString()}`,
     `**Base URL:** ${BASE}`,

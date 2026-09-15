@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { organizationMembership, invitation, auditEvent, role } from "@/db/schema";
+import { organizationMembership, invitation, auditEvent, role, organization } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 import { nanoid } from "nanoid";
 import { withTenantContext } from "@/lib/db/transaction";
+import { enqueueEmail } from "@/lib/email/outbox";
 
 export type InviteUserInput = {
   email: string;
@@ -42,11 +43,10 @@ export class UserRepository {
       throw new Error(`Role ${input.roleKey} not found`);
     }
 
-    return await withTenantContext(ctx, async (tx) => {
-      // Create invitation token
+    const result = await withTenantContext(ctx, async (tx) => {
       const token = nanoid(32);
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+      expiresAt.setDate(expiresAt.getDate() + 7);
 
       const [newInvitation] = await tx
         .insert(invitation)
@@ -60,7 +60,6 @@ export class UserRepository {
         })
         .returning();
 
-      // Audit event
       await tx.insert(auditEvent).values({
         organizationId: ctx.orgId,
         actorId: ctx.userId,
@@ -70,11 +69,25 @@ export class UserRepository {
         metadata: { email: input.email, role: input.roleKey },
       });
 
-      // TODO M4: Send invitation email via outbox
-      console.log(`Invitation created for ${input.email} with token: ${token}`);
-
-      return newInvitation;
+      return { newInvitation, token };
     });
+
+    const org = await db.query.organization.findFirst({
+      where: eq(organization.id, ctx.orgId),
+    });
+    const base = process.env.BETTER_AUTH_URL ?? "http://localhost:43123";
+    await enqueueEmail(ctx, {
+      to: input.email,
+      subject: `Invitation to ${org?.name ?? "your organization"}`,
+      templateKey: "invitation",
+      payload: {
+        organizationName: org?.name ?? "your organization",
+        invitedEmail: input.email,
+        inviteUrl: `${base}/sign-up?invite=${result.token}`,
+      },
+    });
+
+    return result.newInvitation;
   }
 
   /**

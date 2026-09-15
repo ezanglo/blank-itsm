@@ -1,33 +1,89 @@
 import { buildRequestContext, requirePermission } from "@/lib/auth/context";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
+import { AttachmentRepository } from "@/lib/repositories/attachmentRepository";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { STATUS_LABELS, STATUS_COLORS, getAllowedNextStatuses, type TicketStatus } from "@/lib/domain/ticketStatus";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  STATUS_LABELS,
+  STATUS_COLORS,
+  getAllowedNextStatuses,
+  type TicketStatus,
+} from "@/lib/domain/ticketStatus";
+import { PRIORITY_COLORS, PRIORITY_LABELS, type PriorityLevel } from "@/lib/domain/ticketPriority";
+import { TicketTimeline } from "@/components/tickets/ticket-timeline";
+import { TicketSlaPanel } from "@/components/tickets/ticket-sla";
+import { TicketAttachmentsList } from "@/components/tickets/ticket-attachments";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 
 async function claimTicket(ticketId: string) {
   "use server";
-  
+
   const ctx = await buildRequestContext();
   requirePermission(ctx, "ticket:claim");
-  
+
   await TicketRepository.claim(ctx, ticketId, ctx.userId);
   revalidatePath(`/agent/tickets/${ticketId}`);
 }
 
 async function updateStatus(ticketId: string, formData: FormData) {
   "use server";
-  
+
   const ctx = await buildRequestContext();
   requirePermission(ctx, "ticket:update_status");
-  
+
   const newStatus = formData.get("status") as TicketStatus;
   if (!newStatus) return;
-  
+
   await TicketRepository.updateStatus(ctx, ticketId, newStatus);
+  revalidatePath(`/agent/tickets/${ticketId}`);
+}
+
+async function addPublicReply(ticketId: string, formData: FormData) {
+  "use server";
+
+  const ctx = await buildRequestContext();
+  requirePermission(ctx, "ticket:comment_public");
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return;
+
+  await TicketRepository.addComment(ctx, ticketId, body, "public");
+  revalidatePath(`/agent/tickets/${ticketId}`);
+}
+
+async function addInternalNote(ticketId: string, formData: FormData) {
+  "use server";
+
+  const ctx = await buildRequestContext();
+  requirePermission(ctx, "ticket:comment_internal");
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return;
+
+  await TicketRepository.addComment(ctx, ticketId, body, "internal");
+  revalidatePath(`/agent/tickets/${ticketId}`);
+}
+
+async function uploadAttachment(ticketId: string, formData: FormData) {
+  "use server";
+
+  const ctx = await buildRequestContext();
+  requirePermission(ctx, "ticket:read_org");
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return;
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  await AttachmentRepository.addToTicket(ctx, ticketId, {
+    name: file.name,
+    mimeType: file.type,
+    bytes,
+  });
   revalidatePath(`/agent/tickets/${ticketId}`);
 }
 
@@ -40,15 +96,19 @@ export default async function AgentTicketDetailPage({
   const ctx = await buildRequestContext();
   requirePermission(ctx, "agent:access");
   requirePermission(ctx, "ticket:read_org");
-  
+
   const ticket = await TicketRepository.getById(ctx, id);
-  
+
   if (!ticket) {
     notFound();
   }
 
+  const events = await TicketRepository.listEvents(ctx, id, true);
+  const attachments = await AttachmentRepository.listForTicket(ctx, id, true);
+
   const allowedStatuses = getAllowedNextStatuses(ticket.status as TicketStatus);
   const canClaim = !ticket.assigneeId;
+  const priority = (ticket.priority ?? "medium") as PriorityLevel;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -68,23 +128,28 @@ export default async function AgentTicketDetailPage({
                 </span>
                 <CardTitle>{ticket.subject}</CardTitle>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="capitalize">
                   {ticket.type.replace("_", " ")}
                 </Badge>
                 <Badge className={STATUS_COLORS[ticket.status as TicketStatus]}>
                   {STATUS_LABELS[ticket.status as TicketStatus]}
                 </Badge>
-                {ticket.priority && (
-                  <Badge variant="secondary" className="capitalize">
-                    {ticket.priority}
-                  </Badge>
+                <Badge className={PRIORITY_COLORS[priority]}>
+                  {PRIORITY_LABELS[priority]}
+                </Badge>
+                {ticket.impact && ticket.urgency && (
+                  <span className="text-xs text-muted-foreground">
+                    Impact {ticket.impact} · Urgency {ticket.urgency}
+                  </span>
                 )}
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <TicketSlaPanel ticket={ticket} />
+
           <div>
             <h3 className="font-semibold mb-2">Description</h3>
             <p className="text-muted-foreground whitespace-pre-wrap">
@@ -109,23 +174,13 @@ export default async function AgentTicketDetailPage({
                 {new Date(ticket.createdAt).toLocaleString()}
               </p>
             </div>
-            {ticket.updatedAt && ticket.updatedAt !== ticket.createdAt && (
-              <div>
-                <p className="text-sm text-muted-foreground">Last Updated</p>
-                <p className="font-medium">
-                  {new Date(ticket.updatedAt).toLocaleString()}
-                </p>
-              </div>
-            )}
           </div>
 
           <div className="pt-4 border-t space-y-4">
             {canClaim && (
-              <div>
-                <form action={claimTicket.bind(null, id)}>
-                  <Button type="submit">Claim Ticket</Button>
-                </form>
-              </div>
+              <form action={claimTicket.bind(null, id)}>
+                <Button type="submit">Claim Ticket</Button>
+              </form>
             )}
 
             {allowedStatuses.length > 0 && (
@@ -149,6 +204,44 @@ export default async function AgentTicketDetailPage({
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Timeline</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <TicketTimeline events={events} />
+
+          <div className="grid md:grid-cols-2 gap-6 pt-4 border-t">
+            <form action={addPublicReply.bind(null, id)} className="space-y-2">
+              <Label htmlFor="public-body">Public reply</Label>
+              <Textarea id="public-body" name="body" rows={4} required placeholder="Visible to requester…" />
+              <Button type="submit">Send public reply</Button>
+            </form>
+            <form action={addInternalNote.bind(null, id)} className="space-y-2">
+              <Label htmlFor="internal-body">Internal note</Label>
+              <Textarea id="internal-body" name="body" rows={4} required placeholder="Agents only…" />
+              <Button type="submit" variant="secondary">Add internal note</Button>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Attachments</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <TicketAttachmentsList items={attachments} />
+          <form action={uploadAttachment.bind(null, id)} className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="file">Upload file (max 5MB)</Label>
+              <input id="file" name="file" type="file" required className="text-sm" />
+            </div>
+            <Button type="submit">Attach</Button>
+          </form>
         </CardContent>
       </Card>
     </div>

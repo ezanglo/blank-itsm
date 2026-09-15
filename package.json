@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 43123",
+    "dev:db": "tsx scripts/ensure-local-db.ts",
     "build": "next build",
     "start": "next start -p 43123",
     "lint": "eslint",
@@ -45,6 +46,7 @@
     "@types/react-dom": "^19",
     "@vitest/ui": "^5.0.1",
     "drizzle-kit": "^0.31.10",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "happy-dom": "^20.14.5",
