@@ -1,4 +1,5 @@
 import type { PriorityLevel } from "./ticketPriority";
+import { addBusinessMinutes, type BusinessHoursCalendar } from "./businessHours";
 
 /** SLA targets in minutes from ticket creation (or priority change). */
 export const SLA_RESPONSE_MINUTES: Record<PriorityLevel, number> = {
@@ -21,13 +22,19 @@ export function addMinutes(from: Date, minutes: number): Date {
 
 export function computeSlaDueDates(
   priority: PriorityLevel,
-  createdAt: Date = new Date()
+  createdAt: Date = new Date(),
+  options?: { businessHours?: BusinessHoursCalendar }
 ): { responseDueAt: Date; resolutionDueAt: Date } {
+  const add = options?.businessHours
+    ? (d: Date, m: number) => addBusinessMinutes(d, m, options.businessHours!)
+    : addMinutes;
   return {
-    responseDueAt: addMinutes(createdAt, SLA_RESPONSE_MINUTES[priority]),
-    resolutionDueAt: addMinutes(createdAt, SLA_RESOLUTION_MINUTES[priority]),
+    responseDueAt: add(createdAt, SLA_RESPONSE_MINUTES[priority]),
+    resolutionDueAt: add(createdAt, SLA_RESOLUTION_MINUTES[priority]),
   };
 }
+
+export { DEFAULT_BUSINESS_HOURS } from "./businessHours";
 
 export type SlaStatus = "on_track" | "response_due" | "resolution_due" | "breached";
 

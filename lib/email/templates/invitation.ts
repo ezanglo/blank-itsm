@@ -12,6 +12,26 @@ export function renderInvitationEmail(input: {
 </body></html>`;
 }
 
+export function renderSlaEscalationEmail(input: {
+  ticketNumber: number;
+  subject: string;
+  slaStatus: string;
+  ticketUrl: string;
+}): string {
+  const label =
+    input.slaStatus === "breached"
+      ? "SLA breached"
+      : input.slaStatus === "resolution_due"
+        ? "Resolution SLA at risk"
+        : "Response SLA at risk";
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;color:#111">
+<h1 style="font-size:18px">${escapeHtml(label)}</h1>
+<p>Ticket #${input.ticketNumber}: <strong>${escapeHtml(input.subject)}</strong></p>
+<p>Status: ${escapeHtml(input.slaStatus)}</p>
+<p><a href="${escapeAttr(input.ticketUrl)}" style="color:#2563eb">Open in agent workspace</a></p>
+</body></html>`;
+}
+
 export function renderTicketReplyEmail(input: {
   ticketNumber: number;
   subject: string;

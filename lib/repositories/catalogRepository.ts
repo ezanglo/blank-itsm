@@ -19,6 +19,7 @@ import {
   type CatalogFormField,
 } from "@/lib/domain/catalogForm";
 import { computeSlaDueDates } from "@/lib/domain/sla";
+import { SlaRepository } from "@/lib/repositories/slaRepository";
 import { DEFAULT_IMPACT, DEFAULT_URGENCY, computePriority } from "@/lib/domain/ticketPriority";
 
 export type CatalogItemInput = {
@@ -171,7 +172,12 @@ export class CatalogRepository {
 
     const priority = computePriority(DEFAULT_IMPACT, DEFAULT_URGENCY);
     const createdAt = new Date();
-    const sla = computeSlaDueDates(priority, createdAt);
+    const businessHours = await SlaRepository.getBusinessHoursForOrg(ctx.orgId);
+    const sla = computeSlaDueDates(
+      priority,
+      createdAt,
+      businessHours ? { businessHours } : undefined
+    );
     const formBlock = formatFormResponses(fields, responses);
     const description = `${item.description}\n\n--- Order details ---\n${formBlock}`;
     const initialStatus = item.requiresApproval ? "pending_approval" : "open";

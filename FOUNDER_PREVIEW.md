@@ -53,6 +53,17 @@ BETTER_AUTH_TRUSTED_ORIGINS=https://<your-preview-host-from-address-bar>
 
 Defaults already allow `*.cursor.com`, `127.0.0.1`, and `localhost`; `BETTER_AUTH_TRUSTED_PROXY_HEADERS` defaults to enabled for the preview proxy.
 
+### Production `trustedOrigins` tightening (M6)
+
+In production you should **not** rely on the wide default host patterns. Tighten auth without breaking Cursor Preview on this repo:
+
+| Environment | Recommended env |
+|-------------|-----------------|
+| **Local / Preview** | Keep defaults; optionally set `BETTER_AUTH_TRUSTED_ORIGINS` to the exact Preview URL from the address bar if origin checks fail. Leave `BETTER_AUTH_ALLOWED_HOSTS` unset so `*.cursor.com` and `127.0.0.1` keep working. |
+| **Production** | Set `BETTER_AUTH_URL` and `NEXT_PUBLIC_BETTER_AUTH_URL` to your canonical HTTPS app origin. Set `BETTER_AUTH_TRUSTED_ORIGINS` to that same origin (comma-separate staging + prod if needed). Set `BETTER_AUTH_ALLOWED_HOSTS` to your real hostnames only (e.g. `app.example.com,staging.example.com`). Do **not** copy Preview-only hosts into production. |
+
+`parseTrustedOriginList()` in `lib/auth/settings.ts` always merges localhost / 127.0.0.1:43123 for dev; production deploys should set explicit origins via env so CSRF/origin checks match your domain while Preview VMs continue to use the documented `.env` block above.
+
 ### After changing `.env` or pulling this fix
 
 ```bash

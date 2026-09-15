@@ -20,6 +20,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { KnowledgeRepository } from "@/lib/repositories/knowledgeRepository";
+import { SlaRepository } from "@/lib/repositories/slaRepository";
 
 async function claimTicket(ticketId: string) {
   "use server";
@@ -107,6 +108,8 @@ export default async function AgentTicketDetailPage({
   if (!ticket) {
     notFound();
   }
+
+  await SlaRepository.maybeEscalateTicket(ctx, ticket);
 
   const events = await TicketRepository.listEvents(ctx, id, true);
   const attachments = await AttachmentRepository.listForTicket(ctx, id);

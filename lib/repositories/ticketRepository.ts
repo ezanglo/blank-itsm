@@ -20,6 +20,7 @@ import {
   type UrgencyLevel,
 } from "@/lib/domain/ticketPriority";
 import { computeSlaDueDates } from "@/lib/domain/sla";
+import { SlaRepository } from "@/lib/repositories/slaRepository";
 import { withTenantContext } from "@/lib/db/transaction";
 import { enqueueEmail } from "@/lib/email/outbox";
 
@@ -83,7 +84,12 @@ export class TicketRepository {
   static async create(ctx: RequestContext, input: CreateTicketInput) {
     const { impact, urgency, priority } = this.resolveImpactUrgency(input);
     const createdAt = new Date();
-    const sla = computeSlaDueDates(priority, createdAt);
+    const businessHours = await SlaRepository.getBusinessHoursForOrg(ctx.orgId);
+    const sla = computeSlaDueDates(
+      priority,
+      createdAt,
+      businessHours ? { businessHours } : undefined
+    );
 
     return await withTenantContext(ctx, async (tx) => {
       const lastTicket = await tx.query.ticket.findFirst({

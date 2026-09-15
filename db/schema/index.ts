@@ -8,4 +8,5 @@ export * from "./attachments";
 export * from "./email";
 export * from "./catalog";
 export * from "./knowledge";
+export * from "./sla";
 export * from "./relations";

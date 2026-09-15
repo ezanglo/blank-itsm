@@ -208,6 +208,42 @@ describe("RLS wrong-org write (non-superuser)", () => {
     }
   });
 
+  it("rejects organization_sla_settings insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO organization_sla_settings (
+            organization_id, timezone, business_hours
+          ) VALUES (
+            ${orgBId}, 'UTC', '{"timezone":"UTC","days":[]}'::jsonb
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects audit_event insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO audit_event (
+            organization_id, action
+          ) VALUES (
+            ${orgBId}, 'probe.cross_tenant'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
   it("rejects ticket_attachment insert for wrong organization", async () => {
     const ticketRow = await db.query.ticket.findFirst({
       where: eq(ticket.organizationId, orgAId),

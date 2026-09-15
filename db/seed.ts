@@ -66,6 +66,11 @@ async function seed() {
     },
     { key: "audit:read", name: "Read Audit Log", description: "Can read audit logs" },
     {
+      key: "sla:manage",
+      name: "Manage SLA Settings",
+      description: "Configure business hours and SLA escalation email",
+    },
+    {
       key: "admin:access",
       name: "Admin Access",
       description: "Can access admin area",
@@ -178,6 +183,7 @@ async function seed() {
     { roleKey: "admin", permissionKey: "branding:write" },
     { roleKey: "admin", permissionKey: "branding:read" },
     { roleKey: "admin", permissionKey: "audit:read" },
+    { roleKey: "admin", permissionKey: "sla:manage" },
     { roleKey: "admin", permissionKey: "admin:access" },
     { roleKey: "admin", permissionKey: "agent:access" },
     { roleKey: "admin", permissionKey: "portal:access" },

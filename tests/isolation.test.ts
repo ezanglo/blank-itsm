@@ -328,7 +328,8 @@ describe("Tenant Isolation Tests", () => {
                             'organization_branding', 'audit_event', 'ticket_event',
                             'ticket_attachment', 'email_outbox',
                             'catalog_item', 'catalog_order', 'service_request_approval',
-                            'knowledge_article', 'ticket_knowledge_link')
+                            'knowledge_article', 'ticket_knowledge_link',
+                            'organization_sla_settings')
         GROUP BY c.relname, c.relrowsecurity, c.relforcerowsecurity
         ORDER BY c.relname
       `);

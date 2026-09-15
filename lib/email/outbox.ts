@@ -7,12 +7,16 @@ import { withTenantContext } from "@/lib/db/transaction";
  * TECH-009: React Email JSX sources live in lib/email/templates/*.tsx.
  * Runtime uses lib/email/templates/invitation.ts HTML builders (Next.js cannot import react-dom/server here).
  */
-import { renderInvitationEmail, renderTicketReplyEmail } from "./templates/invitation";
+import {
+  renderInvitationEmail,
+  renderTicketReplyEmail,
+  renderSlaEscalationEmail,
+} from "./templates/invitation";
 import { MockEmailTransport } from "./transport/mock";
 import { createResendTransportIfConfigured } from "./transport/resend";
 import type { EmailTransport } from "./transport/types";
 
-export type OutboxTemplateKey = "invitation" | "ticket_public_reply";
+export type OutboxTemplateKey = "invitation" | "ticket_public_reply" | "sla_escalation";
 
 function getTransport(): EmailTransport {
   return createResendTransportIfConfigured() ?? new MockEmailTransport();
@@ -68,6 +72,14 @@ export async function processOutboxEntry(ctx: RequestContext, outboxId: string) 
         ticketNumber: Number(payload.ticketNumber),
         subject: String(payload.subject),
         replyBody: String(payload.replyBody),
+        ticketUrl: String(payload.ticketUrl),
+      });
+      break;
+    case "sla_escalation":
+      html = renderSlaEscalationEmail({
+        ticketNumber: Number(payload.ticketNumber),
+        subject: String(payload.subject),
+        slaStatus: String(payload.slaStatus),
         ticketUrl: String(payload.ticketUrl),
       });
       break;

@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { organizationMembership, invitation, auditEvent, role, organization } from "@/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
+import { ForbiddenError, requirePermission } from "@/lib/auth/context";
 import { nanoid } from "nanoid";
 import { withTenantContext } from "@/lib/db/transaction";
 import { enqueueEmail } from "@/lib/email/outbox";
@@ -34,6 +35,8 @@ export class UserRepository {
    * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
   static async inviteUser(ctx: RequestContext, input: InviteUserInput) {
+    requirePermission(ctx, "user:invite");
+
     // Get role by key
     const targetRole = await db.query.role.findFirst({
       where: and(eq(role.key, input.roleKey), isNull(role.organizationId)), // System role
@@ -95,11 +98,31 @@ export class UserRepository {
    * SECURITY: Both membership and org validated
    * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
+  static async countActiveAdmins(ctx: RequestContext) {
+    const adminRole = await db.query.role.findFirst({
+      where: and(eq(role.key, "admin"), isNull(role.organizationId)),
+    });
+    if (!adminRole) return 0;
+    const rows = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(organizationMembership)
+      .where(
+        and(
+          eq(organizationMembership.organizationId, ctx.orgId),
+          eq(organizationMembership.status, "active"),
+          eq(organizationMembership.roleId, adminRole.id)
+        )
+      );
+    return rows[0]?.count ?? 0;
+  }
+
   static async changeRole(
     ctx: RequestContext,
     membershipId: string,
     newRoleKey: "requester" | "agent" | "admin"
   ) {
+    requirePermission(ctx, "user:role_change");
+
     // Verify membership exists in this org
     const membership = await db.query.organizationMembership.findFirst({
       where: and(
@@ -113,6 +136,17 @@ export class UserRepository {
 
     if (!membership) {
       throw new Error("Membership not found");
+    }
+
+    if (membership.userId === ctx.userId && membership.role.key !== newRoleKey) {
+      throw new ForbiddenError("You cannot change your own role");
+    }
+
+    if (membership.role.key === "admin" && newRoleKey !== "admin") {
+      const adminCount = await this.countActiveAdmins(ctx);
+      if (adminCount <= 1) {
+        throw new ForbiddenError("Cannot demote the last active admin");
+      }
     }
 
     // Get new role

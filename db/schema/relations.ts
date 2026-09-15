@@ -8,6 +8,7 @@ import { ticketAttachment } from "./attachments";
 import { auditEvent } from "./audit";
 import { catalogItem, catalogOrder, serviceRequestApproval } from "./catalog";
 import { knowledgeArticle, ticketKnowledgeLink } from "./knowledge";
+import { organizationSlaSettings } from "./sla";
 
 // User relations
 export const userRelations = relations(user, ({ many }) => ({
@@ -44,6 +45,7 @@ export const organizationRelations = relations(organization, ({ many, one }) => 
   roles: many(role),
   catalogItems: many(catalogItem),
   knowledgeArticles: many(knowledgeArticle),
+  slaSettings: one(organizationSlaSettings),
 }));
 
 export const organizationMembershipRelations = relations(
@@ -260,6 +262,17 @@ export const auditEventRelations = relations(auditEvent, ({ one }) => ({
   }),
   actor: one(user, {
     fields: [auditEvent.actorId],
+    references: [user.id],
+  }),
+}));
+
+export const organizationSlaSettingsRelations = relations(organizationSlaSettings, ({ one }) => ({
+  organization: one(organization, {
+    fields: [organizationSlaSettings.organizationId],
+    references: [organization.id],
+  }),
+  updatedByUser: one(user, {
+    fields: [organizationSlaSettings.updatedBy],
     references: [user.id],
   }),
 }));

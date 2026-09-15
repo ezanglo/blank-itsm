@@ -9,6 +9,7 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 - **Ticket Management**: Create, list, view, and manage incident and service request tickets
 - **Service Desk (M4)**: Ticket timeline with public replies vs internal notes, impact×urgency priority, SLA timers, local file attachments, and outbox email (mock transport in dev)
 - **Catalog & Knowledge (M5)**: Admin service catalog CRUD, portal catalog orders → service_request tickets with optional single-approver workflow, knowledge articles (draft/published), portal KB search with ticket deflection, agent KB linking on reply/resolve
+- **Admin & white-label (M6)**: Roles/permissions reference, hardened user role changes, SLA business-hours calendar and escalation email (mock outbox), branding live preview, org audit log browser
 - **Agent Queue**: Unassigned and "My Tickets" views with claim/assign functionality
 - **Organization Branding**: Customizable logos and theme colors per organization
 - **Audit Trail**: Comprehensive audit logging for security-sensitive actions
