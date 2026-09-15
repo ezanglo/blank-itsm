@@ -5,6 +5,12 @@
 
 const DEFAULT_FALLBACK = "http://localhost:43123";
 
+/** Dev/preview origins always trusted (Cursor tunnel uses 127.0.0.1:43123). */
+const DEFAULT_TRUSTED_ORIGINS = [
+  "http://localhost:43123",
+  "http://127.0.0.1:43123",
+];
+
 /** Host patterns for dynamic baseURL (Better Auth wildcard syntax). */
 const DEFAULT_ALLOWED_HOSTS = [
   "localhost",
@@ -59,6 +65,10 @@ export function parseTrustedOriginList(raw?: string): string[] {
     } catch {
       /* ignore */
     }
+  }
+
+  for (const origin of DEFAULT_TRUSTED_ORIGINS) {
+    origins.add(origin);
   }
 
   return [...origins];

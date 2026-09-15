@@ -67,19 +67,13 @@ npm run db:seed
 
 ### 3-step Founder retest (M3 gate)
 
-**Seeded org admin (recommended — matches seed data):**
+Use seeded admin on Preview (`http://127.0.0.1:43123` tunnel):
 
-1. **Sign-in** (not sign-up): `/sign-in` → `admin@org-a.test` / `password123` → submit.
-2. Confirm you **land on `/portal`** and stay there after refresh (no bounce to sign-in).
-3. Open **`/admin`** → users/branding loads (admin access).
+1. **Sign-up:** `/sign-up` → `admin@org-a.test` / `password123` (any name). If the account already exists from seed, the app **falls back to sign-in** automatically.
+2. **Sign-in:** `/sign-in` → same email/password → submit (confirms session if step 1 used sign-in fallback).
+3. **Land:** `/portal` stays loaded after refresh; open **`/admin`** (users/branding).
 
-**New email sign-up (optional):**
-
-1. **Sign-up** with a *new* email (not `admin@org-a.test`) → you may reach `/portal` briefly.
-2. You should see a **clear yellow notice** on `/sign-in?error=membership` if the account has no org membership (not a silent loop).
-3. Use a **seeded** address + **sign-in** + `password123` for portal/admin (step 1–3 above).
-
-Wrong password shows a **red inline error** on the sign-in form.
+Wrong password → red inline error. Missing org membership → yellow notice on `/sign-in?error=membership` (not a silent loop).
 
 ## Commands (acceptance)
 
