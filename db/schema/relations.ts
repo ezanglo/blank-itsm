@@ -1,0 +1,158 @@
+import { relations } from "drizzle-orm";
+import { user, account, session } from "./users";
+import { organization, organizationMembership, invitation } from "./organizations";
+import { role, permission, rolePermission } from "./rbac";
+import { organizationBranding } from "./branding";
+import { ticket, ticketEvent } from "./tickets";
+import { auditEvent } from "./audit";
+
+// User relations
+export const userRelations = relations(user, ({ many }) => ({
+  accounts: many(account),
+  sessions: many(session),
+  memberships: many(organizationMembership),
+  ticketsRequested: many(ticket, { relationName: "requester" }),
+  ticketsAssigned: many(ticket, { relationName: "assignee" }),
+  ticketEvents: many(ticketEvent),
+  auditEvents: many(auditEvent),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+// Organization relations
+export const organizationRelations = relations(organization, ({ many, one }) => ({
+  memberships: many(organizationMembership),
+  invitations: many(invitation),
+  branding: one(organizationBranding),
+  tickets: many(ticket),
+  auditEvents: many(auditEvent),
+  roles: many(role),
+}));
+
+export const organizationMembershipRelations = relations(
+  organizationMembership,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [organizationMembership.organizationId],
+      references: [organization.id],
+    }),
+    user: one(user, {
+      fields: [organizationMembership.userId],
+      references: [user.id],
+    }),
+    role: one(role, {
+      fields: [organizationMembership.roleId],
+      references: [role.id],
+    }),
+  })
+);
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  organization: one(organization, {
+    fields: [invitation.organizationId],
+    references: [organization.id],
+  }),
+  role: one(role, {
+    fields: [invitation.roleId],
+    references: [role.id],
+  }),
+  inviter: one(user, {
+    fields: [invitation.invitedBy],
+    references: [user.id],
+  }),
+}));
+
+// RBAC relations
+export const roleRelations = relations(role, ({ many, one }) => ({
+  organization: one(organization, {
+    fields: [role.organizationId],
+    references: [organization.id],
+  }),
+  memberships: many(organizationMembership),
+  rolePermissions: many(rolePermission),
+}));
+
+export const permissionRelations = relations(permission, ({ many }) => ({
+  rolePermissions: many(rolePermission),
+}));
+
+export const rolePermissionRelations = relations(rolePermission, ({ one }) => ({
+  role: one(role, {
+    fields: [rolePermission.roleId],
+    references: [role.id],
+  }),
+  permission: one(permission, {
+    fields: [rolePermission.permissionId],
+    references: [permission.id],
+  }),
+}));
+
+// Branding relations
+export const organizationBrandingRelations = relations(organizationBranding, ({ one }) => ({
+  organization: one(organization, {
+    fields: [organizationBranding.organizationId],
+    references: [organization.id],
+  }),
+  updater: one(user, {
+    fields: [organizationBranding.updatedBy],
+    references: [user.id],
+  }),
+}));
+
+// Ticket relations
+export const ticketRelations = relations(ticket, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [ticket.organizationId],
+    references: [organization.id],
+  }),
+  requester: one(user, {
+    fields: [ticket.requesterId],
+    references: [user.id],
+    relationName: "requester",
+  }),
+  assignee: one(user, {
+    fields: [ticket.assigneeId],
+    references: [user.id],
+    relationName: "assignee",
+  }),
+  events: many(ticketEvent),
+}));
+
+export const ticketEventRelations = relations(ticketEvent, ({ one }) => ({
+  organization: one(organization, {
+    fields: [ticketEvent.organizationId],
+    references: [organization.id],
+  }),
+  ticket: one(ticket, {
+    fields: [ticketEvent.ticketId],
+    references: [ticket.id],
+  }),
+  actor: one(user, {
+    fields: [ticketEvent.actorId],
+    references: [user.id],
+  }),
+}));
+
+// Audit relations
+export const auditEventRelations = relations(auditEvent, ({ one }) => ({
+  organization: one(organization, {
+    fields: [auditEvent.organizationId],
+    references: [organization.id],
+  }),
+  actor: one(user, {
+    fields: [auditEvent.actorId],
+    references: [user.id],
+  }),
+}));
