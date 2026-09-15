@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { NewTicketKbHelper } from "@/components/knowledge/new-ticket-kb-helper";
 import {
   computePriority,
   DEFAULT_IMPACT,
@@ -63,6 +64,7 @@ export default async function NewTicketPage() {
           </p>
         </CardHeader>
         <CardContent>
+          <NewTicketKbHelper />
           <form action={createTicket} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="type">Type *</Label>

@@ -8,7 +8,11 @@ let pg: EmbeddedPostgres | null = null;
 export async function setup() {
   const probe = await canConnect(process.env.DATABASE_URL);
   if (probe) {
-    await applyMigrations(process.env.DATABASE_URL!, ["0005_m4_service_desk.sql", "0006_itsm_app_role.sql"]);
+    await applyMigrations(process.env.DATABASE_URL!, [
+      "0005_m4_service_desk.sql",
+      "0006_itsm_app_role.sql",
+      "0007_m5_catalog_knowledge.sql",
+    ]);
     const itsmApp = itsmAppDatabaseUrl(process.env.DATABASE_URL!);
     process.env.ITSM_APP_DATABASE_URL = itsmApp;
     writeFileSync(
@@ -16,6 +20,8 @@ export async function setup() {
       JSON.stringify({
         DATABASE_URL: process.env.DATABASE_URL,
         ITSM_APP_DATABASE_URL: itsmApp,
+        BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "vitest-dev-secret",
+        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:43123",
       })
     );
     return;
@@ -45,6 +51,7 @@ export async function setup() {
     "0004_account_oauth_columns.sql",
     "0005_m4_service_desk.sql",
     "0006_itsm_app_role.sql",
+    "0007_m5_catalog_knowledge.sql",
   ]);
   execSync("npm run db:seed", { stdio: "inherit", env: process.env });
 
@@ -53,6 +60,8 @@ export async function setup() {
     JSON.stringify({
       DATABASE_URL: url,
       ITSM_APP_DATABASE_URL: process.env.ITSM_APP_DATABASE_URL,
+      BETTER_AUTH_SECRET: "vitest-dev-secret",
+      BETTER_AUTH_URL: "http://localhost:43123",
     })
   );
 }

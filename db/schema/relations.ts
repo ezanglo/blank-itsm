@@ -6,6 +6,8 @@ import { organizationBranding } from "./branding";
 import { ticket, ticketEvent } from "./tickets";
 import { ticketAttachment } from "./attachments";
 import { auditEvent } from "./audit";
+import { catalogItem, catalogOrder, serviceRequestApproval } from "./catalog";
+import { knowledgeArticle, ticketKnowledgeLink } from "./knowledge";
 
 // User relations
 export const userRelations = relations(user, ({ many }) => ({
@@ -40,6 +42,8 @@ export const organizationRelations = relations(organization, ({ many, one }) => 
   tickets: many(ticket),
   auditEvents: many(auditEvent),
   roles: many(role),
+  catalogItems: many(catalogItem),
+  knowledgeArticles: many(knowledgeArticle),
 }));
 
 export const organizationMembershipRelations = relations(
@@ -130,6 +134,9 @@ export const ticketRelations = relations(ticket, ({ one, many }) => ({
   }),
   events: many(ticketEvent),
   attachments: many(ticketAttachment),
+  catalogOrders: many(catalogOrder),
+  approvals: many(serviceRequestApproval),
+  knowledgeLinks: many(ticketKnowledgeLink),
 }));
 
 export const ticketAttachmentRelations = relations(ticketAttachment, ({ one }) => ({
@@ -163,6 +170,89 @@ export const ticketEventRelations = relations(ticketEvent, ({ one }) => ({
 }));
 
 // Audit relations
+export const catalogItemRelations = relations(catalogItem, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [catalogItem.organizationId],
+    references: [organization.id],
+  }),
+  approver: one(user, {
+    fields: [catalogItem.approverUserId],
+    references: [user.id],
+  }),
+  orders: many(catalogOrder),
+}));
+
+export const catalogOrderRelations = relations(catalogOrder, ({ one }) => ({
+  organization: one(organization, {
+    fields: [catalogOrder.organizationId],
+    references: [organization.id],
+  }),
+  catalogItem: one(catalogItem, {
+    fields: [catalogOrder.catalogItemId],
+    references: [catalogItem.id],
+  }),
+  ticket: one(ticket, {
+    fields: [catalogOrder.ticketId],
+    references: [ticket.id],
+  }),
+}));
+
+export const serviceRequestApprovalRelations = relations(serviceRequestApproval, ({ one }) => ({
+  organization: one(organization, {
+    fields: [serviceRequestApproval.organizationId],
+    references: [organization.id],
+  }),
+  ticket: one(ticket, {
+    fields: [serviceRequestApproval.ticketId],
+    references: [ticket.id],
+  }),
+  approver: one(user, {
+    fields: [serviceRequestApproval.approverUserId],
+    references: [user.id],
+    relationName: "assignedApprover",
+  }),
+  decidedBy: one(user, {
+    fields: [serviceRequestApproval.decidedById],
+    references: [user.id],
+    relationName: "approvalDecider",
+  }),
+}));
+
+export const knowledgeArticleRelations = relations(knowledgeArticle, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [knowledgeArticle.organizationId],
+    references: [organization.id],
+  }),
+  author: one(user, {
+    fields: [knowledgeArticle.authorId],
+    references: [user.id],
+  }),
+  ticketLinks: many(ticketKnowledgeLink),
+}));
+
+export const ticketKnowledgeLinkRelations = relations(ticketKnowledgeLink, ({ one }) => ({
+  organization: one(organization, {
+    fields: [ticketKnowledgeLink.organizationId],
+    references: [organization.id],
+  }),
+  ticket: one(ticket, {
+    fields: [ticketKnowledgeLink.ticketId],
+    references: [ticket.id],
+  }),
+  article: one(knowledgeArticle, {
+    fields: [ticketKnowledgeLink.articleId],
+    references: [knowledgeArticle.id],
+  }),
+  linkedBy: one(user, {
+    fields: [ticketKnowledgeLink.linkedById],
+    references: [user.id],
+  }),
+  ticketEvent: one(ticketEvent, {
+    fields: [ticketKnowledgeLink.ticketEventId],
+    references: [ticketEvent.id],
+  }),
+}));
+
 export const auditEventRelations = relations(auditEvent, ({ one }) => ({
   organization: one(organization, {
     fields: [auditEvent.organizationId],

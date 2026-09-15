@@ -3,9 +3,15 @@
  * Product-owned labels and transition rules
  */
 
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketStatus =
+  | "pending_approval"
+  | "open"
+  | "in_progress"
+  | "resolved"
+  | "closed";
 
 export const TICKET_STATUSES: readonly TicketStatus[] = [
+  "pending_approval",
   "open",
   "in_progress",
   "resolved",
@@ -13,6 +19,7 @@ export const TICKET_STATUSES: readonly TicketStatus[] = [
 ] as const;
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
+  pending_approval: "Pending Approval",
   open: "Open",
   in_progress: "In Progress",
   resolved: "Resolved",
@@ -20,6 +27,7 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<TicketStatus, string> = {
+  pending_approval: "bg-purple-100 text-purple-800",
   open: "bg-blue-100 text-blue-800",
   in_progress: "bg-yellow-100 text-yellow-800",
   resolved: "bg-green-100 text-green-800",
@@ -28,6 +36,7 @@ export const STATUS_COLORS: Record<TicketStatus, string> = {
 
 // Allowed transitions (agents); requesters may only reopen via portal where permitted
 const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  pending_approval: ["open", "closed"],
   open: ["in_progress", "resolved", "closed"],
   in_progress: ["resolved", "open", "closed"],
   resolved: ["closed", "open"],
@@ -36,6 +45,7 @@ const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
 
 /** Requester-initiated transitions (e.g. reopen closed ticket). */
 const REQUESTER_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
+  pending_approval: [],
   open: [],
   in_progress: [],
   resolved: [],

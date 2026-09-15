@@ -9,7 +9,10 @@ import {
   permission,
   rolePermission,
   ticket,
+  catalogItem,
+  knowledgeArticle,
 } from "./schema";
+import { serializeFormSchema } from "@/lib/domain/catalogForm";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -73,6 +76,31 @@ async function seed() {
       name: "Portal Access",
       description: "Can access requester portal",
     },
+    {
+      key: "catalog:manage",
+      name: "Manage Service Catalog",
+      description: "Create and edit catalog items",
+    },
+    {
+      key: "catalog:order",
+      name: "Order Catalog Services",
+      description: "Browse and order from the service catalog",
+    },
+    {
+      key: "kb:read",
+      name: "Read Knowledge Base",
+      description: "Search published knowledge articles",
+    },
+    {
+      key: "kb:manage",
+      name: "Manage Knowledge Base",
+      description: "Create and publish knowledge articles",
+    },
+    {
+      key: "kb:link",
+      name: "Link KB to Tickets",
+      description: "Attach knowledge articles when replying or resolving",
+    },
   ];
 
   const insertedPermissions = await db
@@ -116,6 +144,8 @@ async function seed() {
     { roleKey: "requester", permissionKey: "ticket:comment_public" },
     { roleKey: "requester", permissionKey: "portal:access" },
     { roleKey: "requester", permissionKey: "branding:read" },
+    { roleKey: "requester", permissionKey: "catalog:order" },
+    { roleKey: "requester", permissionKey: "kb:read" },
 
     // Agent permissions
     { roleKey: "agent", permissionKey: "ticket:create" },
@@ -129,6 +159,10 @@ async function seed() {
     { roleKey: "agent", permissionKey: "agent:access" },
     { roleKey: "agent", permissionKey: "portal:access" },
     { roleKey: "agent", permissionKey: "branding:read" },
+    { roleKey: "agent", permissionKey: "catalog:order" },
+    { roleKey: "agent", permissionKey: "kb:read" },
+    { roleKey: "agent", permissionKey: "kb:manage" },
+    { roleKey: "agent", permissionKey: "kb:link" },
 
     // Admin permissions (all)
     { roleKey: "admin", permissionKey: "ticket:create" },
@@ -147,6 +181,11 @@ async function seed() {
     { roleKey: "admin", permissionKey: "admin:access" },
     { roleKey: "admin", permissionKey: "agent:access" },
     { roleKey: "admin", permissionKey: "portal:access" },
+    { roleKey: "admin", permissionKey: "catalog:manage" },
+    { roleKey: "admin", permissionKey: "catalog:order" },
+    { roleKey: "admin", permissionKey: "kb:read" },
+    { roleKey: "admin", permissionKey: "kb:manage" },
+    { roleKey: "admin", permissionKey: "kb:link" },
   ];
 
   for (const rp of rolePermissionsData) {
@@ -287,6 +326,55 @@ async function seed() {
     roleId: roleMap.get("requester")!,
     status: "active",
   });
+
+  console.log("Creating M5 catalog and knowledge samples for Organization A...");
+  await db.insert(catalogItem).values([
+    {
+      organizationId: orgA.id,
+      name: "New laptop",
+      description: "Request a standard issue laptop for new hires or replacements.",
+      formSchema: serializeFormSchema([
+        { key: "justification", label: "Business justification", type: "textarea", required: true },
+        { key: "department", label: "Department", type: "text", required: true },
+      ]),
+      fulfillmentQueue: "hardware",
+      requiresApproval: true,
+      approverUserId: adminUserA.id,
+      active: true,
+    },
+    {
+      organizationId: orgA.id,
+      name: "Software access",
+      description: "Request access to approved business applications.",
+      formSchema: serializeFormSchema([
+        { key: "application", label: "Application name", type: "text", required: true },
+      ]),
+      fulfillmentQueue: "general",
+      requiresApproval: false,
+      active: true,
+    },
+  ]);
+
+  await db.insert(knowledgeArticle).values([
+    {
+      organizationId: orgA.id,
+      title: "Reset your password",
+      summary: "Steps to reset your corporate password from any device.",
+      body:
+        "1. Go to the identity portal.\n2. Choose Forgot password.\n3. Verify with your authenticator app.\n4. Set a new password meeting complexity rules.",
+      status: "published",
+      authorId: agentUserA.id,
+      publishedAt: new Date(),
+    },
+    {
+      organizationId: orgA.id,
+      title: "VPN troubleshooting draft",
+      summary: "Internal notes on VPN issues.",
+      body: "Draft content for agents only.",
+      status: "draft",
+      authorId: agentUserA.id,
+    },
+  ]);
 
   // Create sample tickets for Organization A
   console.log("Creating sample tickets for Organization A...");

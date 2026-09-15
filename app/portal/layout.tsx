@@ -62,6 +62,12 @@ export default async function PortalLayout({
               <Link href="/portal/tickets/new">
                 <Button variant="ghost">Submit Ticket</Button>
               </Link>
+              <Link href="/portal/catalog">
+                <Button variant="ghost">Catalog</Button>
+              </Link>
+              <Link href="/portal/knowledge">
+                <Button variant="ghost">Knowledge</Button>
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">

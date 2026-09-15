@@ -224,7 +224,8 @@ export class TicketRepository {
     ctx: RequestContext,
     ticketId: string,
     body: string,
-    visibility: "public" | "internal"
+    visibility: "public" | "internal",
+    options?: { knowledgeArticleId?: string }
   ) {
     const existing = await this.getById(ctx, ticketId);
     if (!existing) {
@@ -274,6 +275,17 @@ export class TicketRepository {
 
       return row;
     });
+
+    if (options?.knowledgeArticleId && visibility === "public") {
+      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+      await KnowledgeRepository.linkToTicket(
+        ctx,
+        ticketId,
+        options.knowledgeArticleId,
+        "reply",
+        event.id
+      );
+    }
 
     if (
       visibility === "public" &&
@@ -355,7 +367,7 @@ export class TicketRepository {
     ctx: RequestContext,
     ticketId: string,
     newStatus: TicketStatus,
-    options?: { requesterInitiated?: boolean }
+    options?: { requesterInitiated?: boolean; knowledgeArticleId?: string }
   ) {
     if (!isValidStatus(newStatus)) {
       throw new Error("Invalid status");
@@ -379,7 +391,7 @@ export class TicketRepository {
       assertTransition(from, newStatus);
     }
 
-    return await withTenantContext(ctx, async (tx) => {
+    const result = await withTenantContext(ctx, async (tx) => {
       const updates: {
         status: TicketStatus;
         updatedAt: Date;
@@ -417,15 +429,31 @@ export class TicketRepository {
         metadata: { oldStatus: existing.status, newStatus },
       });
 
-      await tx.insert(ticketEvent).values({
-        organizationId: ctx.orgId,
-        ticketId,
-        actorId: ctx.userId,
-        kind: "status_change",
-        body: `Status changed from ${existing.status} to ${newStatus}`,
-      });
+      const [statusEvent] = await tx
+        .insert(ticketEvent)
+        .values({
+          organizationId: ctx.orgId,
+          ticketId,
+          actorId: ctx.userId,
+          kind: "status_change",
+          body: `Status changed from ${existing.status} to ${newStatus}`,
+        })
+        .returning();
 
-      return updated;
+      return { updated, statusEvent };
     });
+
+    if (options?.knowledgeArticleId && newStatus === "resolved") {
+      const { KnowledgeRepository } = await import("@/lib/repositories/knowledgeRepository");
+      await KnowledgeRepository.linkToTicket(
+        ctx,
+        ticketId,
+        options.knowledgeArticleId,
+        "resolve",
+        result.statusEvent.id
+      );
+    }
+
+    return result.updated;
   }
 }

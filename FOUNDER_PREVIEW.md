@@ -80,7 +80,20 @@ Wrong password → red inline error. Missing org membership → yellow notice on
 ```bash
 npm run build
 npm test -- --run
+npm run test:e2e:m5   # catalog order + KB search smoke (dev server on 43123)
 ```
+
+## M5 quick checks (Catalog + Knowledge)
+
+1. **Admin catalog:** `/admin/catalog` → create/edit items (form fields, fulfillment queue, optional approver).
+2. **Portal order:** `/portal/catalog` → order **Software access** → lands on a `service_request` ticket.
+3. **Approval:** order **New laptop** as requester → sign in as `admin@org-a.test` → open ticket → **Approve request**.
+4. **KB:** `/portal/knowledge?q=password` → **Reset your password**; new ticket form shows live KB deflection while typing.
+5. **Agent link:** on a ticket, public reply or resolve with optional KB article → **Linked knowledge articles** panel updates.
+
+### Preview DB note
+
+`npm run dev:db` applies migration `0007_m5_catalog_knowledge.sql` (RLS on catalog/KB tables). Re-seed after pull: `npm run db:seed`.
 
 ## Root cause (M3 fix summary)
 

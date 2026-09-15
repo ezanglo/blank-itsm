@@ -27,6 +27,7 @@ export const ticket = pgTable(
     firstResponseAt: timestamp("first_response_at", { withTimezone: true }),
     responseDueAt: timestamp("response_due_at", { withTimezone: true }),
     resolutionDueAt: timestamp("resolution_due_at", { withTimezone: true }),
+    fulfillmentQueue: text("fulfillment_queue"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

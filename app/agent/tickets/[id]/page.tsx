@@ -19,6 +19,7 @@ import { TicketAttachmentsList } from "@/components/tickets/ticket-attachments";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { KnowledgeRepository } from "@/lib/repositories/knowledgeRepository";
 
 async function claimTicket(ticketId: string) {
   "use server";
@@ -39,7 +40,8 @@ async function updateStatus(ticketId: string, formData: FormData) {
   const newStatus = formData.get("status") as TicketStatus;
   if (!newStatus) return;
 
-  await TicketRepository.updateStatus(ctx, ticketId, newStatus);
+  const articleId = String(formData.get("knowledgeArticleId") ?? "").trim() || undefined;
+  await TicketRepository.updateStatus(ctx, ticketId, newStatus, { knowledgeArticleId: articleId });
   revalidatePath(`/agent/tickets/${ticketId}`);
 }
 
@@ -52,7 +54,10 @@ async function addPublicReply(ticketId: string, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return;
 
-  await TicketRepository.addComment(ctx, ticketId, body, "public");
+  const articleId = String(formData.get("knowledgeArticleId") ?? "").trim() || undefined;
+  await TicketRepository.addComment(ctx, ticketId, body, "public", {
+    knowledgeArticleId: articleId,
+  });
   revalidatePath(`/agent/tickets/${ticketId}`);
 }
 
@@ -107,7 +112,9 @@ export default async function AgentTicketDetailPage({
   const attachments = await AttachmentRepository.listForTicket(ctx, id);
 
   const allowedStatuses = getAllowedNextStatuses(ticket.status as TicketStatus);
-  const canClaim = !ticket.assigneeId;
+  const canClaim = !ticket.assigneeId && ticket.status !== "pending_approval";
+  const kbArticles = await KnowledgeRepository.listPublished(ctx, 50);
+  const kbLinks = await KnowledgeRepository.listLinksForTicket(ctx, id);
   const priority = (ticket.priority ?? "medium") as PriorityLevel;
 
   return (
@@ -138,6 +145,9 @@ export default async function AgentTicketDetailPage({
                 <Badge className={PRIORITY_COLORS[priority]}>
                   {PRIORITY_LABELS[priority]}
                 </Badge>
+                {ticket.fulfillmentQueue && (
+                  <Badge variant="outline">Queue: {ticket.fulfillmentQueue}</Badge>
+                )}
                 {ticket.impact && ticket.urgency && (
                   <span className="text-xs text-muted-foreground">
                     Impact {ticket.impact} · Urgency {ticket.urgency}
@@ -186,20 +196,32 @@ export default async function AgentTicketDetailPage({
             {allowedStatuses.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Update Status</h3>
-                <form action={updateStatus.bind(null, id)} className="flex gap-2">
-                  <select
-                    name="status"
-                    required
-                    className="flex h-8 w-[200px] rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
-                    defaultValue={allowedStatuses[0]}
-                  >
-                    {allowedStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {STATUS_LABELS[status]}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="submit">Update</Button>
+                <form action={updateStatus.bind(null, id)} className="flex flex-col gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <select
+                      name="status"
+                      required
+                      className="flex h-8 w-[200px] rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+                      defaultValue={allowedStatuses[0]}
+                    >
+                      {allowedStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {STATUS_LABELS[status]}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      name="knowledgeArticleId"
+                      className="flex h-8 min-w-[200px] flex-1 rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+                      defaultValue=""
+                    >
+                      <option value="">Link KB article on resolve (optional)</option>
+                      {kbArticles.map((a) => (
+                        <option key={a.id} value={a.id}>{a.title}</option>
+                      ))}
+                    </select>
+                    <Button type="submit">Update</Button>
+                  </div>
                 </form>
               </div>
             )}
@@ -218,6 +240,16 @@ export default async function AgentTicketDetailPage({
             <form action={addPublicReply.bind(null, id)} className="space-y-2">
               <Label htmlFor="public-body">Public reply</Label>
               <Textarea id="public-body" name="body" rows={4} required placeholder="Visible to requester…" />
+              <select
+                name="knowledgeArticleId"
+                className="flex h-8 w-full rounded-2xl border border-transparent bg-input/50 px-2.5 text-sm"
+                defaultValue=""
+              >
+                <option value="">Link KB article (optional)</option>
+                {kbArticles.map((a) => (
+                  <option key={a.id} value={a.id}>{a.title}</option>
+                ))}
+              </select>
               <Button type="submit">Send public reply</Button>
             </form>
             <form action={addInternalNote.bind(null, id)} className="space-y-2">
@@ -228,6 +260,22 @@ export default async function AgentTicketDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {kbLinks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Linked knowledge articles</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {kbLinks.map((link) => (
+              <div key={link.id} className="flex justify-between gap-2 border-b pb-2">
+                <span>{link.article.title}</span>
+                <span className="text-muted-foreground capitalize">{link.linkType}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -6,4 +6,6 @@ export * from "./tickets";
 export * from "./audit";
 export * from "./attachments";
 export * from "./email";
+export * from "./catalog";
+export * from "./knowledge";
 export * from "./relations";

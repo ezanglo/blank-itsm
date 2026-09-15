@@ -36,6 +36,12 @@ export default async function AdminLayout({
               <Link href="/admin/branding">
                 <Button variant="ghost">Branding</Button>
               </Link>
+              <Link href="/admin/catalog">
+                <Button variant="ghost">Catalog</Button>
+              </Link>
+              <Link href="/admin/knowledge">
+                <Button variant="ghost">Knowledge</Button>
+              </Link>
               <Link href="/agent">
                 <Button variant="ghost">Agent Workspace</Button>
               </Link>

@@ -66,6 +66,7 @@ async function main() {
     "0004_account_oauth_columns.sql",
     "0005_m4_service_desk.sql",
     "0006_itsm_app_role.sql",
+    "0007_m5_catalog_knowledge.sql",
   ]);
   execSync("npm run db:seed", { stdio: "inherit", env: process.env });
   console.log(`[ensure-local-db] Ready. Set DATABASE_URL=${URL}`);

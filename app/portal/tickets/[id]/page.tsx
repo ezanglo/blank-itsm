@@ -1,4 +1,4 @@
-import { buildRequestContext, requirePermission } from "@/lib/auth/context";
+import { buildRequestContext, requirePermission, hasPermission } from "@/lib/auth/context";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
 import { AttachmentRepository } from "@/lib/repositories/attachmentRepository";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { TicketAttachmentsList } from "@/components/tickets/ticket-attachments";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { CatalogRepository } from "@/lib/repositories/catalogRepository";
 
 async function addReply(ticketId: string, formData: FormData) {
   "use server";
@@ -41,6 +42,13 @@ async function reopenTicket(ticketId: string) {
   await TicketRepository.updateStatus(ctx, ticketId, "open", {
     requesterInitiated: true,
   });
+  revalidatePath(`/portal/tickets/${ticketId}`);
+}
+
+async function decideApproval(ticketId: string, decision: "approved" | "rejected") {
+  "use server";
+  const ctx = await buildRequestContext();
+  await CatalogRepository.decideApproval(ctx, ticketId, decision);
   revalidatePath(`/portal/tickets/${ticketId}`);
 }
 
@@ -81,6 +89,10 @@ export default async function TicketDetailPage({
   const attachments = await AttachmentRepository.listForTicket(ctx, id);
   const priority = (ticket.priority ?? "medium") as PriorityLevel;
   const canReopen = getAllowedRequesterNextStatuses(ticket.status as TicketStatus).includes("open");
+  const approval = await CatalogRepository.getApprovalForTicket(ctx, id);
+  const canApprove =
+    approval?.status === "pending" &&
+    (approval.approverUserId === ctx.userId || hasPermission(ctx, "catalog:manage"));
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -136,6 +148,17 @@ export default async function TicketDetailPage({
               </p>
             </div>
           </div>
+
+          {canApprove && (
+            <div className="flex flex-wrap gap-2">
+              <form action={decideApproval.bind(null, id, "approved")}>
+                <Button type="submit">Approve request</Button>
+              </form>
+              <form action={decideApproval.bind(null, id, "rejected")}>
+                <Button type="submit" variant="destructive">Reject request</Button>
+              </form>
+            </div>
+          )}
 
           {canReopen && (
             <form action={reopenTicket.bind(null, id)}>
