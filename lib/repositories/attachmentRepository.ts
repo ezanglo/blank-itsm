@@ -11,8 +11,8 @@ import {
 import { TicketRepository } from "./ticketRepository";
 
 export class AttachmentRepository {
-  static async listForTicket(ctx: RequestContext, ticketId: string, includeInternal: boolean) {
-    const visible = await TicketRepository.assertTicketVisible(ctx, ticketId, includeInternal);
+  static async listForTicket(ctx: RequestContext, ticketId: string) {
+    const visible = await TicketRepository.assertTicketVisible(ctx, ticketId);
     if (!visible) return [];
 
     return db.query.ticketAttachment.findMany({
@@ -30,7 +30,7 @@ export class AttachmentRepository {
     ticketId: string,
     file: { name: string; mimeType: string; bytes: Buffer }
   ) {
-    const visible = await TicketRepository.assertTicketVisible(ctx, ticketId, true);
+    const visible = await TicketRepository.assertTicketVisible(ctx, ticketId);
     if (!visible) {
       throw new Error("Ticket not found");
     }
@@ -67,7 +67,7 @@ export class AttachmentRepository {
     });
     if (!row) return null;
 
-    const visible = await TicketRepository.assertTicketVisible(ctx, row.ticketId, true);
+    const visible = await TicketRepository.assertTicketVisible(ctx, row.ticketId);
     if (!visible) return null;
 
     const bytes = await readAttachmentFile(row.storageKey);

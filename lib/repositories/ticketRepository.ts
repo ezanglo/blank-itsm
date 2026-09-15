@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { ticket, ticketEvent, auditEvent } from "@/db/schema";
 import { eq, and, desc, isNull, notInArray } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
-import { hasPermission } from "@/lib/auth/context";
+import { ForbiddenError, hasPermission } from "@/lib/auth/context";
 import type { TicketStatus } from "@/lib/domain/ticketStatus";
 import {
   assertTransition,
@@ -62,19 +62,20 @@ export class TicketRepository {
     return { impact, urgency, priority };
   }
 
+  /** Org-wide ticket read (agents/admins). Required to view internal timeline notes. */
+  static canViewInternalEvents(ctx: RequestContext): boolean {
+    return hasPermission(ctx, "ticket:read_org");
+  }
+
   /**
    * SECURITY: Requesters may only see own tickets; agents with read_org see all in org.
    */
-  static async assertTicketVisible(
-    ctx: RequestContext,
-    ticketId: string,
-    agentView: boolean
-  ): Promise<boolean> {
+  static async assertTicketVisible(ctx: RequestContext, ticketId: string): Promise<boolean> {
     const row = await db.query.ticket.findFirst({
       where: and(eq(ticket.id, ticketId), eq(ticket.organizationId, ctx.orgId)),
     });
     if (!row) return false;
-    if (agentView && hasPermission(ctx, "ticket:read_org")) return true;
+    if (hasPermission(ctx, "ticket:read_org")) return true;
     if (hasPermission(ctx, "ticket:read_own") && row.requesterId === ctx.userId) return true;
     return false;
   }
@@ -132,7 +133,7 @@ export class TicketRepository {
   }
 
   static async getById(ctx: RequestContext, ticketId: string) {
-    const visible = await this.assertTicketVisible(ctx, ticketId, true);
+    const visible = await this.assertTicketVisible(ctx, ticketId);
     if (!visible) return null;
 
     const result = await db.query.ticket.findFirst({
@@ -196,10 +197,15 @@ export class TicketRepository {
   }
 
   static async listEvents(ctx: RequestContext, ticketId: string, includeInternal: boolean) {
-    const visible = await this.assertTicketVisible(ctx, ticketId, includeInternal);
+    if (includeInternal && !this.canViewInternalEvents(ctx)) {
+      throw new ForbiddenError("Missing permission to view internal ticket notes");
+    }
+
+    const visible = await this.assertTicketVisible(ctx, ticketId);
     if (!visible) return [];
 
-    const where = includeInternal
+    const showInternal = includeInternal && this.canViewInternalEvents(ctx);
+    const where = showInternal
       ? and(eq(ticketEvent.ticketId, ticketId), eq(ticketEvent.organizationId, ctx.orgId))
       : and(
           eq(ticketEvent.ticketId, ticketId),

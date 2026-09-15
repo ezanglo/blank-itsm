@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { organization, role, ticket, ticketEvent, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
-import type { RequestContext } from "@/lib/auth/context";
+import { ForbiddenError, type RequestContext } from "@/lib/auth/context";
 
 describe("ticket timeline visibility", () => {
   let orgId: string;
@@ -89,6 +89,42 @@ describe("ticket timeline visibility", () => {
 
     await db.delete(ticketEvent).where(
       and(eq(ticketEvent.ticketId, ticketId), eq(ticketEvent.organizationId, orgId))
+    );
+  });
+
+  it("rejects includeInternal=true for requester (fail-closed)", async () => {
+    const agentCtx: RequestContext = {
+      userId: agentId,
+      orgId,
+      role: "agent",
+      roleId: agentRoleId,
+      permissions: new Set([
+        "ticket:read_org",
+        "ticket:comment_public",
+        "ticket:comment_internal",
+      ]),
+    };
+
+    const requesterCtx: RequestContext = {
+      userId: requesterId,
+      orgId,
+      role: "requester",
+      roleId: agentRoleId,
+      permissions: new Set(["ticket:read_own", "ticket:comment_public"]),
+    };
+
+    const marker = `internal-leak-${Date.now()}`;
+    await TicketRepository.addComment(agentCtx, ticketId, marker, "internal");
+
+    await expect(
+      TicketRepository.listEvents(requesterCtx, ticketId, true)
+    ).rejects.toBeInstanceOf(ForbiddenError);
+
+    const safeEvents = await TicketRepository.listEvents(requesterCtx, ticketId, false);
+    expect(safeEvents.some((e) => e.body?.includes(marker))).toBe(false);
+
+    await db.delete(ticketEvent).where(
+      and(eq(ticketEvent.ticketId, ticketId), eq(ticketEvent.organizationId, orgId), eq(ticketEvent.body, marker))
     );
   });
 });

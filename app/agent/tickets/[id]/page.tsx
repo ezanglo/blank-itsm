@@ -104,7 +104,7 @@ export default async function AgentTicketDetailPage({
   }
 
   const events = await TicketRepository.listEvents(ctx, id, true);
-  const attachments = await AttachmentRepository.listForTicket(ctx, id, true);
+  const attachments = await AttachmentRepository.listForTicket(ctx, id);
 
   const allowedStatuses = getAllowedNextStatuses(ticket.status as TicketStatus);
   const canClaim = !ticket.assigneeId;

@@ -9,9 +9,14 @@ export async function setup() {
   const probe = await canConnect(process.env.DATABASE_URL);
   if (probe) {
     await applyMigrations(process.env.DATABASE_URL!, ["0005_m4_service_desk.sql", "0006_itsm_app_role.sql"]);
+    const itsmApp = itsmAppDatabaseUrl(process.env.DATABASE_URL!);
+    process.env.ITSM_APP_DATABASE_URL = itsmApp;
     writeFileSync(
       path.join(process.cwd(), ".vitest-env.json"),
-      JSON.stringify({ DATABASE_URL: process.env.DATABASE_URL })
+      JSON.stringify({
+        DATABASE_URL: process.env.DATABASE_URL,
+        ITSM_APP_DATABASE_URL: itsmApp,
+      })
     );
     return;
   }
@@ -30,8 +35,7 @@ export async function setup() {
 
   const url = "postgresql://postgres:postgres@localhost:55432/blank_itsm";
   process.env.DATABASE_URL = url;
-  process.env.ITSM_APP_DATABASE_URL =
-    "postgresql://itsm_app:itsm_app_test@localhost:55432/blank_itsm";
+  process.env.ITSM_APP_DATABASE_URL = itsmAppDatabaseUrl(url);
 
   execSync("npx drizzle-kit push --force", { stdio: "inherit", env: process.env });
   await applyMigrations(url, [
@@ -57,6 +61,13 @@ export async function teardown() {
   if (pg) {
     await pg.stop();
   }
+}
+
+function itsmAppDatabaseUrl(databaseUrl: string): string {
+  const parsed = new URL(databaseUrl.replace(/^postgresql:\/\//, "http://"));
+  parsed.username = "itsm_app";
+  parsed.password = "itsm_app_test";
+  return `postgresql://${parsed.username}:${parsed.password}@${parsed.host}${parsed.pathname}`;
 }
 
 async function canConnect(url?: string): Promise<boolean> {

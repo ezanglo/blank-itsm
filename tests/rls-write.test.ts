@@ -6,9 +6,14 @@ import { eq } from "drizzle-orm";
 import { readFileSync } from "fs";
 import path from "path";
 
-const APP_URL =
-  process.env.ITSM_APP_DATABASE_URL ??
-  "postgresql://itsm_app:itsm_app_test@localhost:5432/blank_itsm";
+function resolveAppUrl(): string {
+  if (process.env.ITSM_APP_DATABASE_URL) return process.env.ITSM_APP_DATABASE_URL;
+  const base = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/blank_itsm";
+  const parsed = new URL(base.replace(/^postgresql:\/\//, "http://"));
+  parsed.username = "itsm_app";
+  parsed.password = "itsm_app_test";
+  return `postgresql://${parsed.username}:${parsed.password}@${parsed.host}${parsed.pathname}`;
+}
 
 describe("RLS wrong-org write (non-superuser)", () => {
   let orgAId: string;
@@ -42,8 +47,8 @@ describe("RLS wrong-org write (non-superuser)", () => {
     requesterAId = requester.id;
   });
 
-  it("rejects insert with organization_id outside current tenant GUC", async () => {
-    const sql = postgres(APP_URL, { max: 1 });
+  it("rejects ticket insert with organization_id outside current tenant GUC", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
     try {
       await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
 
@@ -53,6 +58,49 @@ describe("RLS wrong-org write (non-superuser)", () => {
             organization_id, number, type, subject, description, status, requester_id
           ) VALUES (
             ${orgBId}, 99999, 'incident', 'RLS probe', 'should fail', 'open', ${requesterAId}
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects email_outbox insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+
+      await expect(
+        sql`
+          INSERT INTO email_outbox (
+            organization_id, to_address, subject, template_key, payload, status
+          ) VALUES (
+            ${orgBId}, 'probe@example.com', 'RLS', 'invitation', '{}', 'pending'
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
+  it("rejects ticket_attachment insert for wrong organization", async () => {
+    const ticketRow = await db.query.ticket.findFirst({
+      where: eq(ticket.organizationId, orgAId),
+    });
+    if (!ticketRow) throw new Error("seed ticket missing");
+
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+
+      await expect(
+        sql`
+          INSERT INTO ticket_attachment (
+            organization_id, ticket_id, uploaded_by_id, file_name, mime_type, size_bytes, storage_key
+          ) VALUES (
+            ${orgBId}, ${ticketRow.id}, ${requesterAId}, 'x.txt', 'text/plain', 1, 'probe/key'
           )
         `
       ).rejects.toThrow();

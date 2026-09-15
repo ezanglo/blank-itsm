@@ -78,7 +78,7 @@ export default async function TicketDetailPage({
   }
 
   const events = await TicketRepository.listEvents(ctx, id, false);
-  const attachments = await AttachmentRepository.listForTicket(ctx, id, false);
+  const attachments = await AttachmentRepository.listForTicket(ctx, id);
   const priority = (ticket.priority ?? "medium") as PriorityLevel;
   const canReopen = getAllowedRequesterNextStatuses(ticket.status as TicketStatus).includes("open");
 
