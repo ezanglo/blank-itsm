@@ -330,7 +330,9 @@ describe("Tenant Isolation Tests", () => {
       `);
 
       // Verify all tenant tables have RLS enabled and forced  
-      const rows = Array.isArray(result) ? result : (result as any).rows || [];
+      const rows = Array.isArray(result)
+        ? result
+        : (result as { rows?: typeof result }).rows ?? [];
       expect(rows.length).toBeGreaterThan(0);
       for (const row of rows) {
         expect(row.rls_enabled).toBe(true);

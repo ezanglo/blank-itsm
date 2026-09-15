@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { messageFromAuthError } from "@/lib/auth/form-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,15 +24,25 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      await authClient.signUp.email({
+      const result = await authClient.signUp.email({
         email,
         password,
         name,
       });
+      if (result.error) {
+        setError(messageFromAuthError(result.error));
+        return;
+      }
+      if (!result.data?.token) {
+        setError(
+          "Account may already exist. Seeded users should sign in with password123 instead of signing up again."
+        );
+        return;
+      }
       router.push("/portal");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign up");
+      setError(messageFromAuthError(err));
       console.error(err);
     } finally {
       setLoading(false);

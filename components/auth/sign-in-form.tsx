@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { messageFromAuthError, messageFromSignInQuery } from "@/lib/auth/form-errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,8 @@ import Link from "next/link";
 
 export function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryNotice = messageFromSignInQuery(searchParams.get("error"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,14 +25,18 @@ export function SignInForm() {
     setLoading(true);
 
     try {
-      await authClient.signIn.email({
+      const result = await authClient.signIn.email({
         email,
         password,
       });
+      if (result.error) {
+        setError(messageFromAuthError(result.error));
+        return;
+      }
       router.push("/portal");
       router.refresh();
     } catch (err) {
-      setError("Invalid email or password");
+      setError(messageFromAuthError(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -65,6 +72,11 @@ export function SignInForm() {
               required
             />
           </div>
+          {queryNotice && !error && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+              {queryNotice}
+            </p>
+          )}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}

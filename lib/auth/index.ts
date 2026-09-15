@@ -2,14 +2,18 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import {
+  getAuthFallbackUrl,
+  getServerAuthBaseURLConfig,
+  parseTrustedOriginList,
+  shouldTrustProxyHeaders,
+} from "./settings";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error("BETTER_AUTH_SECRET is not set");
 }
 
-if (!process.env.BETTER_AUTH_URL) {
-  throw new Error("BETTER_AUTH_URL is not set");
-}
+const trustedOrigins = parseTrustedOriginList(process.env.BETTER_AUTH_TRUSTED_ORIGINS);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -23,11 +27,20 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // For M3, simplified flow
+    requireEmailVerification: false,
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: [process.env.BETTER_AUTH_URL],
+  baseURL: getServerAuthBaseURLConfig(),
+  trustedOrigins,
+  advanced: {
+    trustedProxyHeaders: shouldTrustProxyHeaders(),
+    database: {
+      generateId: "uuid",
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;
+
+/** Resolved fallback origin (localhost dev). */
+export const authFallbackUrl = getAuthFallbackUrl();

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { buildRequestContext, hasPermission } from "@/lib/auth/context";
+import { handleAuthLayoutFailure } from "@/lib/auth/redirect";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -10,8 +11,8 @@ async function getAdminContext() {
       redirect("/portal");
     }
     return ctx;
-  } catch {
-    redirect("/sign-in");
+  } catch (error) {
+    handleAuthLayoutFailure(error);
   }
 }
 

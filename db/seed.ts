@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { ensureCredentialAccountsForUsers, SEED_PASSWORD } from "@/lib/auth/seed-credentials";
 import { db } from "./index";
 import {
   user,
@@ -324,19 +325,27 @@ async function seed() {
     },
   ]);
 
+  const seededUserIds = [
+    adminUserA.id,
+    agentUserA.id,
+    requesterUserA.id,
+    adminUserB.id,
+    agentUserB.id,
+    requesterUserB.id,
+  ];
+  console.log("Creating Better Auth credential accounts for seeded users...");
+  await ensureCredentialAccountsForUsers(seededUserIds, SEED_PASSWORD);
+
   console.log("✅ Database seeded successfully!");
-  console.log("\nTest accounts created:");
+  console.log("\nTest accounts (email / password):");
   console.log("\n=== Organization A ===");
-  console.log("Admin:     admin@org-a.test");
-  console.log("Agent:     agent@org-a.test");
-  console.log("Requester: requester@org-a.test");
+  console.log(`Admin:     admin@org-a.test / ${SEED_PASSWORD}`);
+  console.log(`Agent:     agent@org-a.test / ${SEED_PASSWORD}`);
+  console.log(`Requester: requester@org-a.test / ${SEED_PASSWORD}`);
   console.log("\n=== Organization B ===");
-  console.log("Admin:     admin@org-b.test");
-  console.log("Agent:     agent@org-b.test");
-  console.log("Requester: requester@org-b.test");
-  console.log(
-    "\nNote: For Better Auth email/password, you'll need to sign up these users through the UI."
-  );
+  console.log(`Admin:     admin@org-b.test / ${SEED_PASSWORD}`);
+  console.log(`Agent:     agent@org-b.test / ${SEED_PASSWORD}`);
+  console.log(`Requester: requester@org-b.test / ${SEED_PASSWORD}`);
 
   process.exit(0);
 }

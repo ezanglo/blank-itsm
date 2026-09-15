@@ -270,3 +270,19 @@ npm run db:seed          # ✅ Test data created
 **Remaining Work**: Email pipeline (M4 scope), repository rename (optional)
 
 **NOT CLAIMED**: Founder acceptance, production readiness pending review
+
+---
+
+## M3 sign-in redirect fix (CoS brief)
+
+See **FOUNDER_PREVIEW.md** for preview tunnel steps and seeded credentials.
+
+**Verify locally**
+
+1. `npm run db:seed` (creates credential accounts; password `password123`)
+2. `npm run dev` → http://localhost:43123/sign-in
+3. Sign in as `admin@org-a.test` / `password123` → stays on `/portal`
+4. Wrong password shows an inline error (no silent loop)
+5. `npm run build` and `npm test -- --run`
+
+**Commit**: `0108cad` on branch `cursor/fix-sign-in-redirect-loop-58da`
