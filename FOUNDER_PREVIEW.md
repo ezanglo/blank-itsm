@@ -29,21 +29,57 @@ Wrong password shows **Invalid email or password** on the form (no silent loop).
 
 If you were redirected from a protected page, sign-in may show a yellow notice (session expired, missing membership, etc.) via `?error=` query param.
 
-## Cursor Cloud Preview tunnel
+## Cursor Cloud Preview (Founder VM tunnel)
+
+Dev server listens on **`http://127.0.0.1:43123`** inside the Cloud Agent VM. Use the run **Preview** card (tunnel); do not assume a local clone on your laptop.
+
+### Exact `.env` for preview (no prod secrets)
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blank_itsm
+BETTER_AUTH_SECRET=dev-only-change-me-not-for-production
+BETTER_AUTH_URL=http://127.0.0.1:43123
+NEXT_PUBLIC_BETTER_AUTH_URL=http://127.0.0.1:43123
+NODE_ENV=development
+```
+
+- **`BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`**: fallback origins when the proxy does not send forwarded headers. Match how you open Preview (`127.0.0.1` vs `localhost` — use the same host you see in the browser address bar).
+- **Do not set** production Resend/DNS or purchased credentials.
+- **Optional** (only if Preview shows an HTTPS `*.cursor.com` hostname and sign-in still fails origin checks):
+
+```env
+BETTER_AUTH_TRUSTED_ORIGINS=https://<your-preview-host-from-address-bar>
+```
+
+Defaults already allow `*.cursor.com`, `127.0.0.1`, and `localhost`; `BETTER_AUTH_TRUSTED_PROXY_HEADERS` defaults to enabled for the preview proxy.
+
+### After changing `.env` or pulling this fix
+
+```bash
+npx drizzle-kit push --force
+npm run db:seed
+# restart dev server (stop + npm run dev)
+```
 
 1. Start the dev server: `npm run dev` (port **43123**).
-2. Open **Preview** in the agent run (HTTPS tunnel to this VM’s dev server).
-3. Browse the app using the **preview URL hostname** (do not hard-code `localhost` in the browser on your machine).
-4. No extra production credentials are required. Better Auth resolves `baseURL` from the request host when it matches default allowed patterns (`*.cursor.com`, `*.cursor.sh`, `*.cursorpreview.com`, etc.) and trusts `x-forwarded-proto` / `x-forwarded-host` from the preview proxy.
-5. Optional: add a specific preview origin to `.env`:
-   - `BETTER_AUTH_TRUSTED_ORIGINS=https://<your-preview-host>`
+2. Open **Preview** on the agent run.
+3. Browse using the URL shown in Preview (tunnel host).
 
-### Verify sign-in on preview
+### 3-step Founder retest (M3 gate)
 
-1. Go to `/sign-in` on the preview URL.
-2. Sign in as `admin@org-a.test` / `password123`.
-3. Confirm you remain on `/portal` after refresh.
-4. Open `/admin` — should load (not redirect loop to sign-in).
+**Seeded org admin (recommended — matches seed data):**
+
+1. **Sign-in** (not sign-up): `/sign-in` → `admin@org-a.test` / `password123` → submit.
+2. Confirm you **land on `/portal`** and stay there after refresh (no bounce to sign-in).
+3. Open **`/admin`** → users/branding loads (admin access).
+
+**New email sign-up (optional):**
+
+1. **Sign-up** with a *new* email (not `admin@org-a.test`) → you may reach `/portal` briefly.
+2. You should see a **clear yellow notice** on `/sign-in?error=membership` if the account has no org membership (not a silent loop).
+3. Use a **seeded** address + **sign-in** + `password123` for portal/admin (step 1–3 above).
+
+Wrong password shows a **red inline error** on the sign-in form.
 
 ## Commands (acceptance)
 
