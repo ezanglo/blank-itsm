@@ -3,6 +3,7 @@ import { organizationMembership, invitation, auditEvent, role } from "@/db/schem
 import { eq, and, isNull } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 import { nanoid } from "nanoid";
+import { withTenantContext } from "@/lib/db/transaction";
 
 export type InviteUserInput = {
   email: string;
@@ -29,6 +30,7 @@ export class UserRepository {
   /**
    * Invite a user to the organization
    * SECURITY: organizationId from ctx only
+   * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
   static async inviteUser(ctx: RequestContext, input: InviteUserInput) {
     // Get role by key
@@ -40,42 +42,45 @@ export class UserRepository {
       throw new Error(`Role ${input.roleKey} not found`);
     }
 
-    // Create invitation token
-    const token = nanoid(32);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    return await withTenantContext(ctx, async (tx) => {
+      // Create invitation token
+      const token = nanoid(32);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    const [newInvitation] = await db
-      .insert(invitation)
-      .values({
+      const [newInvitation] = await tx
+        .insert(invitation)
+        .values({
+          organizationId: ctx.orgId,
+          email: input.email,
+          roleId: targetRole.id,
+          token,
+          expiresAt,
+          invitedBy: ctx.userId,
+        })
+        .returning();
+
+      // Audit event
+      await tx.insert(auditEvent).values({
         organizationId: ctx.orgId,
-        email: input.email,
-        roleId: targetRole.id,
-        token,
-        expiresAt,
-        invitedBy: ctx.userId,
-      })
-      .returning();
+        actorId: ctx.userId,
+        action: "user.invited",
+        resourceType: "invitation",
+        resourceId: newInvitation.id,
+        metadata: { email: input.email, role: input.roleKey },
+      });
 
-    // Audit event
-    await db.insert(auditEvent).values({
-      organizationId: ctx.orgId,
-      actorId: ctx.userId,
-      action: "user.invited",
-      resourceType: "invitation",
-      resourceId: newInvitation.id,
-      metadata: { email: input.email, role: input.roleKey },
+      // TODO M4: Send invitation email via outbox
+      console.log(`Invitation created for ${input.email} with token: ${token}`);
+
+      return newInvitation;
     });
-
-    // TODO M4: Send invitation email via outbox
-    console.log(`Invitation created for ${input.email} with token: ${token}`);
-
-    return newInvitation;
   }
 
   /**
    * Change user role
    * SECURITY: Both membership and org validated
+   * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
   static async changeRole(
     ctx: RequestContext,
@@ -106,35 +111,37 @@ export class UserRepository {
       throw new Error(`Role ${newRoleKey} not found`);
     }
 
-    // Update membership
-    const [updated] = await db
-      .update(organizationMembership)
-      .set({
-        roleId: newRole.id,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(organizationMembership.id, membershipId),
-          eq(organizationMembership.organizationId, ctx.orgId)
+    return await withTenantContext(ctx, async (tx) => {
+      // Update membership
+      const [updated] = await tx
+        .update(organizationMembership)
+        .set({
+          roleId: newRole.id,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(organizationMembership.id, membershipId),
+            eq(organizationMembership.organizationId, ctx.orgId)
+          )
         )
-      )
-      .returning();
+        .returning();
 
-    // Audit event
-    await db.insert(auditEvent).values({
-      organizationId: ctx.orgId,
-      actorId: ctx.userId,
-      action: "user.role_changed",
-      resourceType: "membership",
-      resourceId: membershipId,
-      metadata: {
-        oldRole: membership.role.key,
-        newRole: newRoleKey,
-        userId: membership.userId,
-      },
+      // Audit event
+      await tx.insert(auditEvent).values({
+        organizationId: ctx.orgId,
+        actorId: ctx.userId,
+        action: "user.role_changed",
+        resourceType: "membership",
+        resourceId: membershipId,
+        metadata: {
+          oldRole: membership.role.key,
+          newRole: newRoleKey,
+          userId: membership.userId,
+        },
+      });
+
+      return updated;
     });
-
-    return updated;
   }
 }

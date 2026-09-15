@@ -1,0 +1,7 @@
+-- Force RLS to apply even to table owners
+ALTER TABLE "organization_membership" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "invitation" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "organization_branding" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ticket" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "ticket_event" FORCE ROW LEVEL SECURITY;
+ALTER TABLE "audit_event" FORCE ROW LEVEL SECURITY;

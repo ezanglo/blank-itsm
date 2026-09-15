@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "@/db";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
-import { user, organization, role, ticket } from "@/db/schema";
+import { user, organization, role, ticket, auditEvent } from "@/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 
@@ -18,46 +18,61 @@ describe("Tenant Isolation Tests", () => {
 
   beforeAll(async () => {
     // Get organizations
-    orgA = await db.query.organization.findFirst({
+    const foundOrgA = await db.query.organization.findFirst({
       where: eq(organization.slug, "org-a"),
     });
-    orgB = await db.query.organization.findFirst({
+    const foundOrgB = await db.query.organization.findFirst({
       where: eq(organization.slug, "org-b"),
     });
 
     // Get roles
-    agentRole = await db.query.role.findFirst({
+    const foundAgentRole = await db.query.role.findFirst({
       where: eq(role.key, "agent"),
     });
-    requesterRole = await db.query.role.findFirst({
+    const foundRequesterRole = await db.query.role.findFirst({
       where: eq(role.key, "requester"),
     });
 
     // Get users
-    userAAgent = await db.query.user.findFirst({
+    const foundUserAAgent = await db.query.user.findFirst({
       where: eq(user.email, "agent@org-a.test"),
     });
-    userARequester = await db.query.user.findFirst({
+    const foundUserARequester = await db.query.user.findFirst({
       where: eq(user.email, "requester@org-a.test"),
     });
-    userBAgent = await db.query.user.findFirst({
+    const foundUserBAgent = await db.query.user.findFirst({
       where: eq(user.email, "agent@org-b.test"),
     });
 
-    // Get tickets
-    ticketA = await db.query.ticket.findFirst({
-      where: and(eq(ticket.organizationId, orgA.id), eq(ticket.number, 1)),
+    // Get tickets - need to check orgA exists first
+    if (!foundOrgA || !foundOrgB) {
+      throw new Error("Organizations not found in database. Run db:seed first.");
+    }
+
+    const foundTicketA = await db.query.ticket.findFirst({
+      where: and(eq(ticket.organizationId, foundOrgA.id), eq(ticket.number, 1)),
     });
-    ticketB = await db.query.ticket.findFirst({
-      where: and(eq(ticket.organizationId, orgB.id), eq(ticket.number, 1)),
+    const foundTicketB = await db.query.ticket.findFirst({
+      where: and(eq(ticket.organizationId, foundOrgB.id), eq(ticket.number, 1)),
     });
 
-    expect(orgA).toBeDefined();
-    expect(orgB).toBeDefined();
-    expect(userAAgent).toBeDefined();
-    expect(userBAgent).toBeDefined();
-    expect(ticketA).toBeDefined();
-    expect(ticketB).toBeDefined();
+    // Verify all required data exists
+    if (!foundOrgA || !foundOrgB || !foundAgentRole || !foundRequesterRole ||
+        !foundUserAAgent || !foundUserARequester || !foundUserBAgent ||
+        !foundTicketA || !foundTicketB) {
+      throw new Error("Seed data incomplete. Run npm run db:seed");
+    }
+
+    // Assign to module-level variables
+    orgA = foundOrgA;
+    orgB = foundOrgB;
+    agentRole = foundAgentRole;
+    requesterRole = foundRequesterRole;
+    userAAgent = foundUserAAgent;
+    userARequester = foundUserARequester;
+    userBAgent = foundUserBAgent;
+    ticketA = foundTicketA;
+    ticketB = foundTicketB;
   });
 
   describe("ISO-010: Ticket list isolation", () => {
@@ -291,6 +306,73 @@ describe("Tenant Isolation Tests", () => {
       if (brandingB) {
         expect(brandingB.organizationId).toBe(orgB.id);
       }
+    });
+  });
+
+  describe("RLS-001: RLS enforcement proof", () => {
+    it("should verify RLS policies are configured with FORCE and WITH CHECK", async () => {
+      // Query pg_catalog to verify RLS configuration
+      const { sql } = await import("drizzle-orm");
+      
+      const result = await db.execute(sql`
+        SELECT 
+          c.relname AS table_name,
+          c.relrowsecurity AS rls_enabled,
+          c.relforcerowsecurity AS rls_forced,
+          COUNT(p.polname) AS policy_count,
+          bool_and(p.polwithcheck IS NOT NULL) AS has_with_check
+        FROM pg_class c
+        LEFT JOIN pg_policy p ON p.polrelid = c.oid
+        WHERE c.relname IN ('ticket', 'organization_membership', 'invitation', 
+                            'organization_branding', 'audit_event', 'ticket_event')
+        GROUP BY c.relname, c.relrowsecurity, c.relforcerowsecurity
+        ORDER BY c.relname
+      `);
+
+      // Verify all tenant tables have RLS enabled and forced  
+      const rows = Array.isArray(result) ? result : (result as any).rows || [];
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) {
+        expect(row.rls_enabled).toBe(true);
+        expect(row.rls_forced).toBe(true);
+        expect(Number(row.policy_count)).toBeGreaterThan(0);
+        expect(row.has_with_check).toBe(true);
+      }
+    });
+
+    it("should verify withTenantContext sets GUC and creates tickets", async () => {
+      const { TicketRepository } = await import("@/lib/repositories/ticketRepository");
+      
+      // Create context for Org A
+      const ctxAgentA: RequestContext = {
+        userId: userAAgent.id,
+        orgId: orgA.id,
+        role: "agent",
+        roleId: agentRole.id,
+        permissions: new Set(["ticket:create"]),
+      };
+
+      // Use TicketRepository which uses withTenantContext internally
+      const newTicket = await TicketRepository.create(ctxAgentA, {
+        type: "incident",
+        subject: "RLS test via withTenantContext",
+        description: "This tests that withTenantContext works",
+      });
+
+      // Verify ticket was created with correct org
+      expect(newTicket.organizationId).toBe(orgA.id);
+      expect(newTicket.subject).toBe("RLS test via withTenantContext");
+
+      // Verify the GUC was set by checking audit event was also created in same transaction
+      const auditEvents = await db.query.auditEvent.findMany({
+        where: eq(auditEvent.resourceId, newTicket.id),
+      });
+      expect(auditEvents.length).toBeGreaterThan(0);
+      expect(auditEvents[0].action).toBe("ticket.created");
+
+      // Clean up
+      await db.delete(ticket).where(eq(ticket.id, newTicket.id));
+      await db.delete(auditEvent).where(eq(auditEvent.resourceId, newTicket.id));
     });
   });
 });

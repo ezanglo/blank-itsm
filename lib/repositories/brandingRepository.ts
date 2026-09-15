@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { organizationBranding, auditEvent } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
+import { withTenantContext } from "@/lib/db/transaction";
 
 export type BrandingTokens = {
   primary?: string;
@@ -30,44 +31,47 @@ export class BrandingRepository {
   /**
    * Upsert organization branding
    * SECURITY: organizationId from ctx only
+   * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
   static async upsert(ctx: RequestContext, input: UpdateBrandingInput) {
     const existing = await this.getForOrg(ctx.orgId);
 
-    let result;
-    if (existing) {
-      [result] = await db
-        .update(organizationBranding)
-        .set({
-          logoUrl: input.logoUrl,
-          tokens: input.tokens,
-          updatedBy: ctx.userId,
-          updatedAt: new Date(),
-        })
-        .where(eq(organizationBranding.organizationId, ctx.orgId))
-        .returning();
-    } else {
-      [result] = await db
-        .insert(organizationBranding)
-        .values({
-          organizationId: ctx.orgId,
-          logoUrl: input.logoUrl,
-          tokens: input.tokens,
-          updatedBy: ctx.userId,
-        })
-        .returning();
-    }
+    return await withTenantContext(ctx, async (tx) => {
+      let result;
+      if (existing) {
+        [result] = await tx
+          .update(organizationBranding)
+          .set({
+            logoUrl: input.logoUrl,
+            tokens: input.tokens,
+            updatedBy: ctx.userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(organizationBranding.organizationId, ctx.orgId))
+          .returning();
+      } else {
+        [result] = await tx
+          .insert(organizationBranding)
+          .values({
+            organizationId: ctx.orgId,
+            logoUrl: input.logoUrl,
+            tokens: input.tokens,
+            updatedBy: ctx.userId,
+          })
+          .returning();
+      }
 
-    // Audit event
-    await db.insert(auditEvent).values({
-      organizationId: ctx.orgId,
-      actorId: ctx.userId,
-      action: "branding.updated",
-      resourceType: "branding",
-      resourceId: result.id,
-      metadata: { hasLogo: !!input.logoUrl, hasTokens: !!input.tokens },
+      // Audit event
+      await tx.insert(auditEvent).values({
+        organizationId: ctx.orgId,
+        actorId: ctx.userId,
+        action: "branding.updated",
+        resourceType: "branding",
+        resourceId: result.id,
+        metadata: { hasLogo: !!input.logoUrl, hasTokens: !!input.tokens },
+      });
+
+      return result;
     });
-
-    return result;
   }
 }
