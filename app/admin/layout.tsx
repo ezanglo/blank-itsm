@@ -20,7 +20,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const ctx = await getAdminContext();
+  await getAdminContext();
 
   return (
     <div className="min-h-screen flex flex-col">

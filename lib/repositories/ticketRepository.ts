@@ -207,7 +207,12 @@ export class TicketRepository {
       throw new Error("Ticket not found");
     }
 
-    const updates: any = {
+    const updates: {
+      status: TicketStatus;
+      updatedAt: Date;
+      resolvedAt?: Date;
+      closedAt?: Date;
+    } = {
       status: newStatus,
       updatedAt: new Date(),
     };

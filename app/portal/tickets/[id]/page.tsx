@@ -2,7 +2,7 @@ import { buildRequestContext } from "@/lib/auth/context";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/domain/ticketStatus";
+import { STATUS_LABELS, STATUS_COLORS, type TicketStatus } from "@/lib/domain/ticketStatus";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -43,8 +43,8 @@ export default async function TicketDetailPage({
                 <Badge variant="outline" className="capitalize">
                   {ticket.type.replace("_", " ")}
                 </Badge>
-                <Badge className={STATUS_COLORS[ticket.status]}>
-                  {STATUS_LABELS[ticket.status]}
+                <Badge className={STATUS_COLORS[ticket.status as TicketStatus]}>
+                  {STATUS_LABELS[ticket.status as TicketStatus]}
                 </Badge>
                 {ticket.priority && (
                   <Badge variant="secondary" className="capitalize">

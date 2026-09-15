@@ -30,8 +30,8 @@ export function SignUpForm() {
       });
       router.push("/portal");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to sign up");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign up");
       console.error(err);
     } finally {
       setLoading(false);

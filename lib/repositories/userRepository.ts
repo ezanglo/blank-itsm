@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { user, organizationMembership, invitation, auditEvent, role } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { organizationMembership, invitation, auditEvent, role } from "@/db/schema";
+import { eq, and, isNull } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 import { nanoid } from "nanoid";
 
@@ -33,7 +33,7 @@ export class UserRepository {
   static async inviteUser(ctx: RequestContext, input: InviteUserInput) {
     // Get role by key
     const targetRole = await db.query.role.findFirst({
-      where: and(eq(role.key, input.roleKey), eq(role.organizationId, null)), // System role
+      where: and(eq(role.key, input.roleKey), isNull(role.organizationId)), // System role
     });
 
     if (!targetRole) {
@@ -99,7 +99,7 @@ export class UserRepository {
 
     // Get new role
     const newRole = await db.query.role.findFirst({
-      where: and(eq(role.key, newRoleKey), eq(role.organizationId, null)),
+      where: and(eq(role.key, newRoleKey), isNull(role.organizationId)),
     });
 
     if (!newRole) {

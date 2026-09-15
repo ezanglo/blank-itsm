@@ -3,7 +3,7 @@ import { TicketRepository } from "@/lib/repositories/ticketRepository";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/domain/ticketStatus";
+import { STATUS_LABELS, STATUS_COLORS, type TicketStatus } from "@/lib/domain/ticketStatus";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -88,8 +88,8 @@ export default async function AgentQueuePage({
                       <Badge variant="outline" className="capitalize">
                         {ticket.type.replace("_", " ")}
                       </Badge>
-                      <Badge className={STATUS_COLORS[ticket.status]}>
-                        {STATUS_LABELS[ticket.status]}
+                      <Badge className={STATUS_COLORS[ticket.status as TicketStatus]}>
+                        {STATUS_LABELS[ticket.status as TicketStatus]}
                       </Badge>
                       {ticket.priority && (
                         <Badge variant="secondary" className="capitalize">

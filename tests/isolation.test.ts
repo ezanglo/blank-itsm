@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { db } from "@/db";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
-import { user, organization, organizationMembership, role, ticket } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { user, organization, role, ticket } from "@/db/schema";
+import { eq, and, isNull } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 
 describe("Tenant Isolation Tests", () => {
-  let orgA: any;
-  let orgB: any;
-  let userAAgent: any;
-  let userARequester: any;
-  let userBAgent: any;
-  let ticketA: any;
-  let ticketB: any;
-  let agentRole: any;
-  let requesterRole: any;
+  let orgA: { id: string; slug: string };
+  let orgB: { id: string; slug: string };
+  let userAAgent: { id: string; email: string };
+  let userARequester: { id: string; email: string };
+  let userBAgent: { id: string; email: string };
+  let ticketA: { id: string; number: number; organizationId: string };
+  let ticketB: { id: string; number: number; organizationId: string };
+  let agentRole: { id: string; key: string };
+  let requesterRole: { id: string; key: string };
 
   beforeAll(async () => {
     // Get organizations
@@ -226,6 +226,7 @@ describe("Tenant Isolation Tests", () => {
 
       // Ticket B should still be unassigned or have its original assignee
       expect(unchangedTicketB?.assigneeId).not.toBe(userAAgent.id);
+      expect(unchangedTicketB).toBeDefined();
     });
 
     it("should successfully claim own org ticket", async () => {
@@ -233,7 +234,7 @@ describe("Tenant Isolation Tests", () => {
       const unassignedTicket = await db.query.ticket.findFirst({
         where: and(
           eq(ticket.organizationId, orgA.id),
-          eq(ticket.assigneeId, null as any)
+          isNull(ticket.assigneeId)
         ),
       });
 

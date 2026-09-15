@@ -1,6 +1,6 @@
 import { auth } from "./index";
 import { db } from "@/db";
-import { organizationMembership, role, rolePermission, permission } from "@/db/schema";
+import { organizationMembership } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 

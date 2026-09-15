@@ -9,8 +9,6 @@ import {
   rolePermission,
   ticket,
 } from "./schema";
-import { eq } from "drizzle-orm";
-import { nanoid } from "nanoid";
 
 async function seed() {
   console.log("🌱 Seeding database...");

@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STATUS_LABELS, STATUS_COLORS, getAllowedNextStatuses, canTransition, type TicketStatus } from "@/lib/domain/ticketStatus";
-import { notFound, redirect } from "next/navigation";
+import { STATUS_LABELS, STATUS_COLORS, getAllowedNextStatuses, type TicketStatus } from "@/lib/domain/ticketStatus";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 
@@ -73,8 +73,8 @@ export default async function AgentTicketDetailPage({
                 <Badge variant="outline" className="capitalize">
                   {ticket.type.replace("_", " ")}
                 </Badge>
-                <Badge className={STATUS_COLORS[ticket.status]}>
-                  {STATUS_LABELS[ticket.status]}
+                <Badge className={STATUS_COLORS[ticket.status as TicketStatus]}>
+                  {STATUS_LABELS[ticket.status as TicketStatus]}
                 </Badge>
                 {ticket.priority && (
                   <Badge variant="secondary" className="capitalize">
