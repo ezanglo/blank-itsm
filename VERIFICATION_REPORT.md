@@ -285,4 +285,4 @@ See **FOUNDER_PREVIEW.md** for preview tunnel steps and seeded credentials.
 4. Wrong password shows an inline error (no silent loop)
 5. `npm run build` and `npm test -- --run`
 
-**Commit**: `b19748b` on branch `cursor/fix-sign-in-redirect-loop-58da`
+**Commit**: `bdc90d1629d0588dca29cd52156092548478aebf` on `main` (includes auth fix + Founder preview docs)
