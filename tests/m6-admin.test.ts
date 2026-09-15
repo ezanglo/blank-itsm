@@ -7,6 +7,7 @@ import { ForbiddenError } from "@/lib/auth/context";
 import { UserRepository } from "@/lib/repositories/userRepository";
 import { SlaRepository } from "@/lib/repositories/slaRepository";
 import { AuditRepository } from "@/lib/repositories/auditRepository";
+import { BrandingRepository } from "@/lib/repositories/brandingRepository";
 import { DEFAULT_BUSINESS_HOURS } from "@/lib/domain/businessHours";
 
 function ctxFor(
@@ -98,5 +99,12 @@ describe("M6 admin hardening", () => {
   it("denies audit list without audit:read", async () => {
     const ctx = ctxFor(agentA.id, orgAId, ["agent:access"]);
     await expect(AuditRepository.listRecent(ctx, 5)).rejects.toThrow(ForbiddenError);
+  });
+
+  it("denies branding upsert without branding:write", async () => {
+    const ctx = ctxFor(agentA.id, orgAId, ["branding:read", "agent:access"]);
+    await expect(
+      BrandingRepository.upsert(ctx, { logoUrl: "https://example.com/logo.png" })
+    ).rejects.toThrow(ForbiddenError);
   });
 });

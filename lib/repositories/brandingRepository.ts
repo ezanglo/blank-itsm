@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { organizationBranding, auditEvent } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
+import { requirePermission } from "@/lib/auth/context";
 import { withTenantContext } from "@/lib/db/transaction";
 
 export type BrandingTokens = {
@@ -34,6 +35,7 @@ export class BrandingRepository {
    * RLS: Transaction sets app.current_org_id for defense-in-depth
    */
   static async upsert(ctx: RequestContext, input: UpdateBrandingInput) {
+    requirePermission(ctx, "branding:write");
     const existing = await this.getForOrg(ctx.orgId);
 
     return await withTenantContext(ctx, async (tx) => {
