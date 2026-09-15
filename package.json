@@ -16,7 +16,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "tsx scripts/m3-e2e-acceptance.ts",
-    "test:e2e:m5": "tsx scripts/m5-e2e-smoke.ts"
+    "test:e2e:m5": "tsx scripts/m5-e2e-acceptance.ts",
+    "test:e2e:m5:smoke": "tsx scripts/m5-e2e-smoke.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
