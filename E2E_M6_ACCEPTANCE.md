@@ -2,7 +2,7 @@
 
 **Run at:** 2026-09-15T23:52:30.877Z
 **Base URL:** http://127.0.0.1:43123
-**App commit:** `4df99afec525252ab96768597f95add57cb5a24e`
+**App commit:** `eee4670846c98bfc546f63bc43c2df17ccc137e0`
 **Branch:** `cursor/m6-admin-white-label-d393`
 **Runner:** Playwright Chromium (headless); dev server `npm run dev` on port 43123
 **Database:** `postgresql://postgres:postgres@localhost:55432/blank_itsm`
