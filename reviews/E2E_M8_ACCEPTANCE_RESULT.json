@@ -3,10 +3,10 @@
   "overall": "PASS",
   "passed": 5,
   "total": 5,
-  "runId": "1789556364855",
-  "runAt": "2026-09-16T10:59:39.930Z",
+  "runId": "1789556970129",
+  "runAt": "2026-09-16T11:09:44.134Z",
   "baseUrl": "http://127.0.0.1:43123",
-  "commit": "5304c5b578f5c177901b5d7edf4eb90e612da961",
+  "commit": "2b814596ea04ed5def8502d29a7e1638f3a1ac63",
   "branch": "cursor/automation-rules-m8-5d5d",
   "scenarios": [
     {
@@ -14,11 +14,11 @@
       "briefScenario": "1",
       "title": "Admin CRUD /admin/automation",
       "status": "PASS",
-      "notes": "Created rules E2E-M8-1789556364855-CRUD and E2E-M8-1789556364855-ASSIGN; list and edit surfaces verified",
+      "notes": "Created rules E2E-M8-1789556970129-CRUD and E2E-M8-1789556970129-ASSIGN; list and edit surfaces verified",
       "screenshot": "e2e-screenshots/m8/02-admin-automation-edit.png",
       "assertions": [
         "Automation list loads",
-        "Rule E2E-M8-1789556364855-CRUD visible",
+        "Rule E2E-M8-1789556970129-CRUD visible",
         "Edit form reachable"
       ]
     },
@@ -27,7 +27,7 @@
       "briefScenario": "2",
       "title": "Assignment on create + timeline automation attribution",
       "status": "PASS",
-      "notes": "Ticket E2E-M8-1789556364855-assign-ticket assigned to Agent A with automation attribution",
+      "notes": "Ticket E2E-M8-1789556970129-assign-ticket assigned to Agent A with automation attribution",
       "screenshot": "e2e-screenshots/m8/03-assignment-timeline.png",
       "assertions": [
         "Assignee Agent A on agent ticket view",
@@ -39,7 +39,7 @@
       "briefScenario": "3",
       "title": "Trigger → internal note and/or mock outbox email",
       "status": "PASS",
-      "notes": "Internal note visible to agent; 2 new .eml file(s) in mock outbox",
+      "notes": "Internal note visible to agent; 4 new .eml file(s) in mock outbox",
       "screenshot": "e2e-screenshots/m8/04-trigger-note-email.png",
       "assertions": [
         "Internal note from automation on SR create",
@@ -63,7 +63,7 @@
       "briefScenario": "5",
       "title": "Org A/B isolation",
       "status": "PASS",
-      "notes": "Org B rule E2E-M8-1789556364855-ORGB not visible in Org A; Org A rules not in Org B list",
+      "notes": "Org B rule E2E-M8-1789556970129-ORGB not visible in Org A; Org A rules not in Org B list",
       "screenshot": "e2e-screenshots/m8/08-org-a-isolation.png",
       "assertions": [
         "Org B admin sees only Org B rules",

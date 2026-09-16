@@ -1,10 +1,10 @@
 # M8 Automation rules — in-VM E2E acceptance summary
 
 **Overall:** PASS (5/5 checks)
-**Run at:** 2026-09-16T10:59:39.929Z
-**E2E run id:** `1789556364855`
+**Run at:** 2026-09-16T11:09:44.133Z
+**E2E run id:** `1789556970129`
 **Base URL:** http://127.0.0.1:43123
-**App commit:** `5304c5b578f5c177901b5d7edf4eb90e612da961`
+**App commit:** `2b814596ea04ed5def8502d29a7e1638f3a1ac63`
 **Branch:** `cursor/automation-rules-m8-5d5d`
 **Runner:** Playwright Chromium (headless); auth via `POST /api/auth/sign-in/email` with `credentials: include` (no Preview SSO).
 
@@ -34,18 +34,18 @@ npm run test:e2e:m8
 
 Admin CRUD /admin/automation
 
-Created rules E2E-M8-1789556364855-CRUD and E2E-M8-1789556364855-ASSIGN; list and edit surfaces verified
+Created rules E2E-M8-1789556970129-CRUD and E2E-M8-1789556970129-ASSIGN; list and edit surfaces verified
 
 Assertions:
 - Automation list loads
-- Rule E2E-M8-1789556364855-CRUD visible
+- Rule E2E-M8-1789556970129-CRUD visible
 - Edit form reachable
 
 ### M8-2 (Brief §2) — PASS
 
 Assignment on create + timeline automation attribution
 
-Ticket E2E-M8-1789556364855-assign-ticket assigned to Agent A with automation attribution
+Ticket E2E-M8-1789556970129-assign-ticket assigned to Agent A with automation attribution
 
 Assertions:
 - Assignee Agent A on agent ticket view
@@ -55,7 +55,7 @@ Assertions:
 
 Trigger → internal note and/or mock outbox email
 
-Internal note visible to agent; 2 new .eml file(s) in mock outbox
+Internal note visible to agent; 4 new .eml file(s) in mock outbox
 
 Assertions:
 - Internal note from automation on SR create
@@ -75,7 +75,7 @@ Assertions:
 
 Org A/B isolation
 
-Org B rule E2E-M8-1789556364855-ORGB not visible in Org A; Org A rules not in Org B list
+Org B rule E2E-M8-1789556970129-ORGB not visible in Org A; Org A rules not in Org B list
 
 Assertions:
 - Org B admin sees only Org B rules
