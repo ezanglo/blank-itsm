@@ -302,7 +302,7 @@ npx shadcn@latest add <component-name>
 ## M7 — Reporting verification (Reviewer → Tester)
 
 1. Re-seed so `report:read` is on agent/admin roles: `npm run db:seed`
-2. `npm test -- --run` — includes **RPT-010** (org isolation), **RPT-011** (permission gate), **RPT-012** (CSV)
+2. `npm test -- --run` — includes **RPT-010** (org isolation), **RPT-011** (all report paths + requester), **RPT-012** (CSV format), **RPT-013** (export HTTP 401/403 + tenant CSV)
 3. `npm run dev` — sign in as `agent@org-a.test`, open **Agent → Reports** (`/agent/reports`)
 4. Confirm backlog/volume/SLA cards and workload table; use **Export** buttons or `GET /api/reports/tickets/export?scope=open`
 5. Optional smoke (dev server running): `npm run test:e2e:m7:smoke`
