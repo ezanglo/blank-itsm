@@ -14,9 +14,13 @@ Shell chrome refresh per **DASHBOARD_SHELL_SPEC** (Impeccable **Operate** mode):
 
 Roles retained (`/admin/roles`) per route inventory rule.
 
+### Admin shell home
+
+**`/admin/reports`** is the single admin shell entry: sidebar brand link (`shellSurfaceHome`), breadcrumb “Admin” root, portal/agent “Admin” workspace switcher (`ADMIN_SHELL_HOME`), and `app/admin/page.tsx` redirect. Visiting `/admin` lands on Reports ops dashboard.
+
 ## CSS / tokens
 
-- Preset `b1HYXIuXY` colors/radius unchanged.
+- Preset `b1HYXIuXY` — auditable via `components.json` (`createPreset`) and `design/UI_PRESET.md`; colors/radius in `app/globals.css` unchanged.
 - Shell: `--sidebar-width`, `--header-height` on `SidebarProvider`.
 - Typography: `--font-sans` (Inter); `--font-mono` system stack.
 - White-label: `--primary` / `--primary-foreground` on shell provider; org logo in sidebar header.

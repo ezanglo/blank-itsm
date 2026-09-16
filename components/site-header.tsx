@@ -15,6 +15,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   shellParentForPath,
+  shellSurfaceHome,
   shellTitleForPath,
   type ShellSurface,
 } from "@/lib/navigation/shell-nav";
@@ -69,14 +70,7 @@ export function SiteHeader({ surface }: { surface: ShellSurface }) {
 }
 
 function surfaceRoot(surface: ShellSurface): string {
-  switch (surface) {
-    case "portal":
-      return "/portal";
-    case "agent":
-      return "/agent";
-    case "admin":
-      return "/admin/reports";
-  }
+  return shellSurfaceHome(surface);
 }
 
 function surfaceLabel(surface: ShellSurface): string {

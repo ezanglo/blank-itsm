@@ -39,6 +39,20 @@ export type ShellPermissions = {
   canAdmin: boolean;
 };
 
+/** Canonical admin shell entry (sidebar brand, breadcrumbs, `/admin` redirect). */
+export const ADMIN_SHELL_HOME = "/admin/reports";
+
+export function shellSurfaceHome(surface: ShellSurface): string {
+  switch (surface) {
+    case "portal":
+      return "/portal";
+    case "agent":
+      return "/agent";
+    case "admin":
+      return ADMIN_SHELL_HOME;
+  }
+}
+
 const portalMain: ShellNavItem[] = [
   { title: "Home", url: "/portal", icon: Home },
   { title: "My tickets", url: "/portal/tickets", icon: Ticket },
@@ -100,7 +114,7 @@ export function buildShellNav(
       });
     }
     if (permissions.canAdmin) {
-      secondary.push({ title: "Admin", url: "/admin/users", icon: Shield });
+      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: Shield });
     }
     return {
       surface,
@@ -112,7 +126,7 @@ export function buildShellNav(
   if (surface === "agent") {
     secondary.push({ title: "Portal", url: "/portal", icon: Home });
     if (permissions.canAdmin) {
-      secondary.push({ title: "Admin", url: "/admin/users", icon: Shield });
+      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: Shield });
     }
     return {
       surface,

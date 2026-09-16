@@ -18,6 +18,7 @@ import {
 import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   defaultProductName,
+  shellSurfaceHome,
   type ShellNavConfig,
   type ShellSurface,
 } from "@/lib/navigation/shell-nav";
@@ -37,9 +38,11 @@ export function AppSidebar({
   branding: ShellBranding;
   user: ShellUser;
 }) {
+  const surface = nav.surface as ShellSurface;
   const productName =
-    branding.productName?.trim() ||
-    defaultProductName(nav.surface as ShellSurface);
+    branding.productName?.trim() || defaultProductName(surface);
+  const homeHref = shellSurfaceHome(surface);
+  const brandControlLabel = `Go to ${productName} home`;
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -48,12 +51,15 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              render={<Link href={homeHref(nav.surface)} />}
+              tooltip={productName}
+              render={
+                <Link href={homeHref} aria-label={brandControlLabel} />
+              }
             >
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
-                  alt=""
+                  alt={`${productName} logo`}
                   className="size-8 shrink-0 rounded-md object-contain"
                 />
               ) : (
@@ -79,15 +85,4 @@ export function AppSidebar({
       <SidebarRail />
     </Sidebar>
   );
-}
-
-function homeHref(surface: ShellSurface): string {
-  switch (surface) {
-    case "portal":
-      return "/portal";
-    case "agent":
-      return "/agent";
-    case "admin":
-      return "/admin/reports";
-  }
 }
