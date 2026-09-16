@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start -p 43123",
     "lint": "eslint",
+    "ci": "npm run lint && npm test -- --run && DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/blank_itsm} BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-ci-test-secret-not-for-production} npm run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

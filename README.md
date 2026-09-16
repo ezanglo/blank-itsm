@@ -36,9 +36,11 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 1. **Clone the repository**
 
 ```bash
-git clone <repository-url>
+git clone https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git blank-itsm
 cd blank-itsm
 ```
+
+After the Origin slug is renamed to `blank-itsm`, use `https://origin.cursor.com/git/ezraanglo/blank-itsm.git` (see [FOUNDER_PREVIEW.md](./FOUNDER_PREVIEW.md#rename-origin-slug-to-blank-itsm-founder-ui)).
 
 2. **Install dependencies**
 
@@ -82,7 +84,7 @@ docker-compose up -d
 npm run db:push
 # Apply RLS SQL for M4 tables (if not already applied)
 psql "$DATABASE_URL" -f db/migrations/0005_m4_service_desk.sql
-psql "$DATABASE_URL" -f db/migrations/0006_itsm_app_role.sql
+psql "$DATABASE_URL" -f db/migrations/0006_itsm_app_role.sql   # itsm_app role for RLS tests — see FOUNDER_PREVIEW.md
 psql "$DATABASE_URL" -f db/migrations/0007_m5_catalog_knowledge.sql
 ```
 
@@ -127,6 +129,14 @@ After seeding, you can create accounts for these test users:
 4. The seed script has already set up the organizations and memberships
 
 ## Running Tests
+
+### CI script
+
+```bash
+npm run ci
+```
+
+Runs ESLint, Vitest (embedded Postgres if `DATABASE_URL` is down, otherwise your local DB), and `next build`. GitHub Actions runs the same via [`.github/workflows/ci.yml`](.github/workflows/ci.yml) when the repo is mirrored to GitHub (Postgres 16 service, no Neon).
 
 ### Isolation Tests
 

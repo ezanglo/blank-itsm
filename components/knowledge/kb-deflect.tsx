@@ -19,7 +19,6 @@ export function KbDeflectSearch({
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
-      setHits([]);
       return;
     }
 

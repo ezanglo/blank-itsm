@@ -1,5 +1,40 @@
 # Founder preview & sign-in verification
 
+## Repository
+
+| Item | Value |
+|------|--------|
+| **Product name** | `blank-itsm` |
+| **Origin slug (current)** | `ezraanglo/tmp-24caffaea01e301c` |
+| **HTTPS clone** | `https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git` |
+| **Codebase** | [cursor.com/codebase/ezraanglo/tmp-24caffaea01e301c](https://cursor.com/codebase/ezraanglo/tmp-24caffaea01e301c) |
+
+### Rename Origin slug to `blank-itsm` (Founder UI)
+
+The Origin CLI in Cloud Agent VMs does not expose `origin repo rename`. Automated rename was not attempted with credentials here.
+
+**Founder steps (when the UI supports rename):**
+
+1. Open [Origin repository settings](https://origin.cursor.com/ezraanglo/tmp-24caffaea01e301c) (or Codebase → Settings for this repo).
+2. Change the repository **slug** / **name** from `tmp-24caffaea01e301c` to `blank-itsm` under owner `ezraanglo`.
+3. Update local remotes after rename:
+   ```bash
+   git remote set-url origin https://origin.cursor.com/git/ezraanglo/blank-itsm.git
+   ```
+4. Expected clone URL after rename: `https://origin.cursor.com/git/ezraanglo/blank-itsm.git`
+
+Until rename completes, docs and `package.json` already use the **blank-itsm** product name; only the Origin path segment stays temporary.
+
+## Continuous integration (no Neon)
+
+| Where | What runs |
+|-------|-----------|
+| **Local / Cloud Agent** | `npm run ci` → `eslint`, `vitest --run`, `next build` |
+| **GitHub** (after mirror) | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — Postgres 16 service on port 5432, same env as tests |
+| **Origin / Cursor** | Configure a check that runs `npm ci --legacy-peer-deps && npm run ci` with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blank_itsm` and Postgres available (service container or `npm run dev:db` embedded Postgres on agents without a DB) |
+
+Tests use **embedded Postgres** (`embedded-postgres` on port `55432`) when `DATABASE_URL` is unreachable, or your local/docker Postgres when it is. No paid Neon or Vercel is required.
+
 ## Quick start (localhost)
 
 ```bash
@@ -62,7 +97,20 @@ In production you should **not** rely on the wide default host patterns. Tighten
 | **Local / Preview** | Keep defaults; optionally set `BETTER_AUTH_TRUSTED_ORIGINS` to the exact Preview URL from the address bar if origin checks fail. Leave `BETTER_AUTH_ALLOWED_HOSTS` unset so `*.cursor.com` and `127.0.0.1` keep working. |
 | **Production** | Set `BETTER_AUTH_URL` and `NEXT_PUBLIC_BETTER_AUTH_URL` to your canonical HTTPS app origin. Set `BETTER_AUTH_TRUSTED_ORIGINS` to that same origin (comma-separate staging + prod if needed). Set `BETTER_AUTH_ALLOWED_HOSTS` to your real hostnames only (e.g. `app.example.com,staging.example.com`). Do **not** copy Preview-only hosts into production. |
 
-`parseTrustedOriginList()` in `lib/auth/settings.ts` always merges localhost / 127.0.0.1:43123 for dev; production deploys should set explicit origins via env so CSRF/origin checks match your domain while Preview VMs continue to use the documented `.env` block above.
+When `NODE_ENV` is **not** `production`, `parseTrustedOriginList()` merges localhost / `127.0.0.1:43123` and optional `BETTER_AUTH_TRUSTED_ORIGINS`. When the **running server** has `NODE_ENV=production` (not during `next build`), the app **requires** `BETTER_AUTH_URL` plus `BETTER_AUTH_TRUSTED_ORIGINS` (or `TRUSTED_ORIGINS`) and does **not** add preview host patterns — see `.env.example`.
+
+### `itsm_app` role (RLS realism)
+
+Migration [`db/migrations/0006_itsm_app_role.sql`](db/migrations/0006_itsm_app_role.sql) creates a **non-superuser** login `itsm_app` / `itsm_app_test` with DML on `public` tables but **without** bypassing row-level security. The app’s normal `DATABASE_URL` uses `postgres` (superuser) for migrations and app queries; RLS negative tests connect via `ITSM_APP_DATABASE_URL`.
+
+| Context | Behavior |
+|---------|----------|
+| **Vitest** | `tests/globalSetup.ts` applies `0006` and sets `ITSM_APP_DATABASE_URL` automatically. |
+| **Local Postgres** | After `db:push` / migrations: `psql "$DATABASE_URL" -f db/migrations/0006_itsm_app_role.sql` |
+| **CI Postgres service** | Same migration is applied in global setup when tests connect to the service DB. |
+| **Optional manual** | Export `ITSM_APP_DATABASE_URL=postgresql://itsm_app:itsm_app_test@localhost:5432/blank_itsm` to run [`tests/rls-write.test.ts`](tests/rls-write.test.ts) against the restricted role. |
+
+Do not use `itsm_app` for `npm run dev` unless you intentionally want RLS-enforced app behavior with a non-owner role.
 
 ### After changing `.env` or pulling this fix
 
@@ -89,6 +137,7 @@ Wrong password → red inline error. Missing org membership → yellow notice on
 ## Commands (acceptance)
 
 ```bash
+npm run ci            # lint + test + build (same as GitHub Actions)
 npm run build
 npm test -- --run
 npm run test:e2e:m5   # catalog order + KB search smoke (dev server on 43123)

@@ -16,7 +16,7 @@ if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error("BETTER_AUTH_SECRET is not set");
 }
 
-const trustedOrigins = parseTrustedOriginList(process.env.BETTER_AUTH_TRUSTED_ORIGINS);
+const trustedOrigins = parseTrustedOriginList();
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

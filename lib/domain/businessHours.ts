@@ -51,7 +51,7 @@ function dayConfig(calendar: BusinessHoursCalendar, date: Date): BusinessDayConf
 }
 
 function startOfNextBusinessMinute(date: Date, calendar: BusinessHoursCalendar): Date {
-  let cursor = new Date(date.getTime());
+  const cursor = new Date(date.getTime());
   for (let guard = 0; guard < 366 * 2; guard++) {
     const config = dayConfig(calendar, cursor);
     const minuteOfDay = cursor.getUTCHours() * 60 + cursor.getUTCMinutes();
