@@ -32,6 +32,19 @@ export function renderSlaEscalationEmail(input: {
 </body></html>`;
 }
 
+export function renderAutomationNotifyEmail(input: {
+  ticketNumber: number;
+  subject: string;
+  ruleName: string;
+  ticketUrl: string;
+}): string {
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;color:#111">
+<h1 style="font-size:18px">Automation notification</h1>
+<p>Rule <strong>${escapeHtml(input.ruleName)}</strong> ran on ticket #${input.ticketNumber}: ${escapeHtml(input.subject)}</p>
+<p><a href="${escapeAttr(input.ticketUrl)}" style="color:#2563eb">Open ticket</a></p>
+</body></html>`;
+}
+
 export function renderTicketReplyEmail(input: {
   ticketNumber: number;
   subject: string;

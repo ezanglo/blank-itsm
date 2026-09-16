@@ -22,7 +22,13 @@ import {
 import { computeSlaDueDates } from "@/lib/domain/sla";
 import { SlaRepository } from "@/lib/repositories/slaRepository";
 import { withTenantContext } from "@/lib/db/transaction";
-import { enqueueEmail } from "@/lib/email/outbox";
+import { enqueueEmail, processPendingOutbox } from "@/lib/email/outbox";
+import {
+  createAutomationContext,
+  evaluateTriggers,
+  runTicketCreatedAutomation,
+} from "@/lib/domain/automation/engine";
+import type { PendingAutomationEmail } from "@/lib/domain/automation/types";
 
 const INTERNAL_EVENT_KINDS = ["comment_internal"] as const;
 
@@ -134,7 +140,13 @@ export class TicketRepository {
         metadata: { ticketNumber: number, type: input.type, priority },
       });
 
-      return newTicket;
+      const afterAutomation = await runTicketCreatedAutomation(tx, ctx, newTicket);
+      return afterAutomation;
+    }).then(async (ticketRow) => {
+      await processPendingOutbox(ctx, 50).catch((err) => {
+        console.error("[automation] outbox processing failed after create", err);
+      });
+      return ticketRow;
     });
   }
 
@@ -255,6 +267,8 @@ export class TicketRepository {
     }
 
     const event = await withTenantContext(ctx, async (tx) => {
+      const autoCtx = createAutomationContext(ctx.orgId, ticketId);
+      const pendingEmails: PendingAutomationEmail[] = [];
       const updates: Record<string, Date | null> = { updatedAt: new Date() };
       if (!existing.firstResponseAt && hasPermission(ctx, "ticket:read_org")) {
         updates.firstResponseAt = new Date();
@@ -295,6 +309,29 @@ export class TicketRepository {
         });
       }
 
+      if (visibility === "public") {
+        const refreshed = await tx.query.ticket.findFirst({
+          where: and(eq(ticket.id, ticketId), eq(ticket.organizationId, ctx.orgId)),
+        });
+        if (refreshed) {
+          await evaluateTriggers(
+            tx,
+            ctx,
+            refreshed,
+            "public_reply_added",
+            autoCtx,
+            pendingEmails
+          );
+        }
+      }
+
+      return row;
+    }).then(async (row) => {
+      if (visibility === "public") {
+        await processPendingOutbox(ctx, 50).catch((err) => {
+          console.error("[automation] outbox processing failed after public reply", err);
+        });
+      }
       return row;
     });
 
@@ -467,6 +504,23 @@ export class TicketRepository {
         });
       }
 
+      const autoCtx = createAutomationContext(ctx.orgId, ticketId);
+      const pendingEmails: PendingAutomationEmail[] = [];
+      const afterTriggers = await evaluateTriggers(
+        tx,
+        ctx,
+        updated,
+        "status_changed",
+        autoCtx,
+        pendingEmails,
+        { fromStatus: existing.status, toStatus: newStatus }
+      );
+
+      return afterTriggers;
+    }).then(async (updated) => {
+      await processPendingOutbox(ctx, 50).catch((err) => {
+        console.error("[automation] outbox processing failed after status change", err);
+      });
       return updated;
     });
 

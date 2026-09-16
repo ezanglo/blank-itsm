@@ -111,6 +111,11 @@ async function seed() {
       name: "Read Operations Reports",
       description: "View org dashboards and export ticket reports",
     },
+    {
+      key: "automation:manage",
+      name: "Manage Automation Rules",
+      description: "Create and edit assignment and trigger automation rules",
+    },
   ];
 
   const insertedPermissions = await db
@@ -199,6 +204,7 @@ async function seed() {
     { roleKey: "admin", permissionKey: "kb:manage" },
     { roleKey: "admin", permissionKey: "kb:link" },
     { roleKey: "admin", permissionKey: "report:read" },
+    { roleKey: "admin", permissionKey: "automation:manage" },
   ];
 
   for (const rp of rolePermissionsData) {

@@ -12,6 +12,11 @@ import {
 import { enqueueEmail } from "@/lib/email/outbox";
 import { getSlaStatus } from "@/lib/domain/sla";
 import type { ticket } from "@/db/schema";
+import {
+  createAutomationContext,
+  evaluateTriggers,
+} from "@/lib/domain/automation/engine";
+import { processPendingOutbox } from "@/lib/email/outbox";
 
 export type SlaSettingsInput = {
   timezone?: string;
@@ -136,6 +141,18 @@ export class SlaRepository {
       ),
     });
     if (existing) return;
+
+    const slaTrigger =
+      status === "breached" ? "sla_breached" : ("sla_at_risk" as const);
+
+    await withTenantContext(ctx, async (tx) => {
+      const autoCtx = createAutomationContext(ctx.orgId, ticketRow.id);
+      const pendingEmails: never[] = [];
+      await evaluateTriggers(tx, ctx, ticketRow, slaTrigger, autoCtx, pendingEmails);
+    });
+    await processPendingOutbox(ctx, 50).catch((err) => {
+      console.error("[automation] outbox processing failed after SLA trigger", err);
+    });
 
     const base = process.env.BETTER_AUTH_URL ?? "http://localhost:43123";
     await enqueueEmail(ctx, {

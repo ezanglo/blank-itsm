@@ -11,6 +11,7 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 - **Catalog & Knowledge (M5)**: Admin service catalog CRUD, portal catalog orders → service_request tickets with optional single-approver workflow, knowledge articles (draft/published), portal KB search with ticket deflection, agent KB linking on reply/resolve
 - **Admin & white-label (M6)**: Roles/permissions reference, hardened user role changes, SLA business-hours calendar and escalation email (mock outbox), branding live preview, org audit log browser
 - **Reporting & ops visibility (M7)**: Org-scoped operations dashboard (backlog, volume, SLA counts, workload by assignee), CSV export for ticket lists, agent and admin surfaces
+- **Automation rules (M8)**: Org-scoped assignment rules (first-match on create) and trigger rules (status change, public reply, SLA signals) with allowlisted conditions/actions, loop guard, admin UI at `/admin/automation`, email via outbox only
 - **Agent Queue**: Unassigned and "My Tickets" views with claim/assign functionality
 - **Organization Branding**: Customizable logos and theme colors per organization
 - **Audit Trail**: Comprehensive audit logging for security-sensitive actions

@@ -13,6 +13,7 @@ export async function setup() {
       "0006_itsm_app_role.sql",
       "0007_m5_catalog_knowledge.sql",
       "0008_m6_admin_sla.sql",
+      "0009_m8_automation.sql",
     ]);
     const itsmApp = itsmAppDatabaseUrl(process.env.DATABASE_URL!);
     process.env.ITSM_APP_DATABASE_URL = itsmApp;
@@ -54,6 +55,7 @@ export async function setup() {
     "0006_itsm_app_role.sql",
     "0007_m5_catalog_knowledge.sql",
     "0008_m6_admin_sla.sql",
+    "0009_m8_automation.sql",
   ]);
   execSync("npm run db:seed", { stdio: "inherit", env: process.env });
 

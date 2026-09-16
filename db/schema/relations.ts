@@ -9,6 +9,7 @@ import { auditEvent } from "./audit";
 import { catalogItem, catalogOrder, serviceRequestApproval } from "./catalog";
 import { knowledgeArticle, ticketKnowledgeLink } from "./knowledge";
 import { organizationSlaSettings } from "./sla";
+import { automationRule } from "./automation";
 
 // User relations
 export const userRelations = relations(user, ({ many }) => ({
@@ -273,6 +274,21 @@ export const organizationSlaSettingsRelations = relations(organizationSlaSetting
   }),
   updatedByUser: one(user, {
     fields: [organizationSlaSettings.updatedBy],
+    references: [user.id],
+  }),
+}));
+
+export const automationRuleRelations = relations(automationRule, ({ one }) => ({
+  organization: one(organization, {
+    fields: [automationRule.organizationId],
+    references: [organization.id],
+  }),
+  createdByUser: one(user, {
+    fields: [automationRule.createdBy],
+    references: [user.id],
+  }),
+  updatedByUser: one(user, {
+    fields: [automationRule.updatedBy],
     references: [user.id],
   }),
 }));

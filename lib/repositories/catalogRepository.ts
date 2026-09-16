@@ -11,6 +11,8 @@ import { eq, and, desc } from "drizzle-orm";
 import type { RequestContext } from "@/lib/auth/context";
 import { ForbiddenError, hasPermission, requirePermission } from "@/lib/auth/context";
 import { withTenantContext } from "@/lib/db/transaction";
+import { runTicketCreatedAutomation } from "@/lib/domain/automation/engine";
+import { processPendingOutbox } from "@/lib/email/outbox";
 import {
   formatFormResponses,
   parseFormSchema,
@@ -252,7 +254,13 @@ export class CatalogRepository {
         metadata: { catalogItemId: item.id, requiresApproval: item.requiresApproval },
       });
 
-      return newTicket;
+      const afterAutomation = await runTicketCreatedAutomation(tx, ctx, newTicket);
+      return afterAutomation;
+    }).then(async (ticketRow) => {
+      await processPendingOutbox(ctx, 50).catch((err) => {
+        console.error("[automation] outbox processing failed after catalog order", err);
+      });
+      return ticketRow;
     });
   }
 

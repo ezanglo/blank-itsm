@@ -11,12 +11,17 @@ import {
   renderInvitationEmail,
   renderTicketReplyEmail,
   renderSlaEscalationEmail,
+  renderAutomationNotifyEmail,
 } from "./templates/invitation";
 import { MockEmailTransport } from "./transport/mock";
 import { createResendTransportIfConfigured } from "./transport/resend";
 import type { EmailTransport } from "./transport/types";
 
-export type OutboxTemplateKey = "invitation" | "ticket_public_reply" | "sla_escalation";
+export type OutboxTemplateKey =
+  | "invitation"
+  | "ticket_public_reply"
+  | "sla_escalation"
+  | "automation_notify";
 
 function getTransport(): EmailTransport {
   return createResendTransportIfConfigured() ?? new MockEmailTransport();
@@ -80,6 +85,14 @@ export async function processOutboxEntry(ctx: RequestContext, outboxId: string) 
         ticketNumber: Number(payload.ticketNumber),
         subject: String(payload.subject),
         slaStatus: String(payload.slaStatus),
+        ticketUrl: String(payload.ticketUrl),
+      });
+      break;
+    case "automation_notify":
+      html = renderAutomationNotifyEmail({
+        ticketNumber: Number(payload.ticketNumber),
+        subject: String(payload.subject),
+        ruleName: String(payload.ruleName),
         ticketUrl: String(payload.ticketUrl),
       });
       break;
