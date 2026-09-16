@@ -88,6 +88,8 @@ npm run db:push
 psql "$DATABASE_URL" -f db/migrations/0005_m4_service_desk.sql
 psql "$DATABASE_URL" -f db/migrations/0006_itsm_app_role.sql   # itsm_app role for RLS tests — see FOUNDER_PREVIEW.md
 psql "$DATABASE_URL" -f db/migrations/0007_m5_catalog_knowledge.sql
+psql "$DATABASE_URL" -f db/migrations/0008_m6_admin_sla.sql
+psql "$DATABASE_URL" -f db/migrations/0009_m8_automation.sql
 ```
 
 6. **Seed the database**
@@ -308,6 +310,14 @@ npx shadcn@latest add <component-name>
 4. Confirm backlog/volume/SLA cards and workload table; use **Export** buttons or `GET /api/reports/tickets/export?scope=open`
 5. In-VM Tester evidence (no Preview SSO): `npm run test:e2e:m7` → `reviews/E2E_M7_ACCEPTANCE_SUMMARY.md`
 6. Optional quick smoke: `npm run test:e2e:m7:smoke`
+
+## M8 — Automation rules verification (Reviewer)
+
+1. Apply migration `0009_m8_automation.sql` and re-seed (`npm run db:seed`) for `automation:manage` on Admin.
+2. `npm test -- --run` — includes `tests/m8-automation.test.ts` (allowlist, first-match, org isolation, disable, outbox, internal notes, loop guard depth, audit).
+3. `DATABASE_URL=... BETTER_AUTH_SECRET=... npm run build`
+4. `npm run dev` — sign in as `admin@org-a.test`, open **Admin → Automation** (`/admin/automation`).
+5. Create an assignment rule (incident → assign Agent A), then as `requester@org-a.test` create an incident and confirm assignee on agent ticket view + timeline automation attribution.
 
 ## License
 

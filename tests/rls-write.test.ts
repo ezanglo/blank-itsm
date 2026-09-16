@@ -244,6 +244,30 @@ describe("RLS wrong-org write (non-superuser)", () => {
     }
   });
 
+  it("rejects automation_rule insert for wrong organization", async () => {
+    const sql = postgres(resolveAppUrl(), { max: 1 });
+    try {
+      await sql`SELECT set_config('app.current_org_id', ${orgAId}, true)`;
+      await expect(
+        sql`
+          INSERT INTO automation_rule (
+            organization_id, name, kind, enabled, sort_order, conditions, actions
+          ) VALUES (
+            ${orgBId},
+            'RLS probe',
+            'assignment',
+            true,
+            0,
+            '{"all":[]}'::jsonb,
+            '[]'::jsonb
+          )
+        `
+      ).rejects.toThrow();
+    } finally {
+      await sql.end();
+    }
+  });
+
   it("rejects ticket_attachment insert for wrong organization", async () => {
     const ticketRow = await db.query.ticket.findFirst({
       where: eq(ticket.organizationId, orgAId),

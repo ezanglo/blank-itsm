@@ -7,6 +7,7 @@ import type {
   ConditionField,
   ConditionOp,
 } from "./types";
+import { AUTOMATION_TRIGGERS } from "./types";
 import { TICKET_STATUSES } from "@/lib/domain/ticketStatus";
 
 const CONDITION_FIELDS: readonly ConditionField[] = ["type", "priority", "status"];
@@ -150,16 +151,23 @@ export function parseActions(raw: unknown): AutomationAction[] {
   return raw.map((a, i) => assertAction(a, i));
 }
 
+export function assertAutomationTrigger(value: unknown): AutomationTrigger {
+  if (typeof value !== "string" || !AUTOMATION_TRIGGERS.includes(value as AutomationTrigger)) {
+    throw new AutomationValidationError("Unknown or missing automation trigger");
+  }
+  return value as AutomationTrigger;
+}
+
 export function validateRuleShape(input: {
   kind: AutomationRuleKind;
-  trigger?: AutomationTrigger | null;
+  trigger?: AutomationTrigger | string | null;
   conditions: unknown;
   actions: unknown;
 }) {
-  if (input.kind === "trigger" && !input.trigger) {
-    throw new AutomationValidationError("trigger is required when kind is trigger");
-  }
-  if (input.kind === "assignment" && input.trigger) {
+  let trigger: AutomationTrigger | null = null;
+  if (input.kind === "trigger") {
+    trigger = assertAutomationTrigger(input.trigger);
+  } else if (input.trigger) {
     throw new AutomationValidationError("assignment rules cannot have a trigger");
   }
   const conditions = parseConditions(input.conditions);
@@ -167,5 +175,5 @@ export function validateRuleShape(input: {
   if (actions.length === 0) {
     throw new AutomationValidationError("At least one action is required");
   }
-  return { conditions, actions };
+  return { conditions, actions, trigger };
 }

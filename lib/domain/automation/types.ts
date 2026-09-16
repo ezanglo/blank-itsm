@@ -7,6 +7,14 @@ export type AutomationTrigger =
   | "sla_at_risk"
   | "sla_breached";
 
+export const AUTOMATION_TRIGGERS: readonly AutomationTrigger[] = [
+  "ticket_created",
+  "status_changed",
+  "public_reply_added",
+  "sla_at_risk",
+  "sla_breached",
+] as const;
+
 export type AutomationTriggerConfig = {
   fromStatus?: string;
   toStatus?: string;

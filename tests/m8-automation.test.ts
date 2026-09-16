@@ -13,10 +13,15 @@ import type { RequestContext } from "@/lib/auth/context";
 import { ForbiddenError } from "@/lib/auth/context";
 import { AutomationRepository, AutomationValidationError } from "@/lib/repositories/automationRepository";
 import { TicketRepository } from "@/lib/repositories/ticketRepository";
-import { parseConditions, parseActions } from "@/lib/domain/automation/validators";
+import {
+  parseConditions,
+  parseActions,
+  assertAutomationTrigger,
+} from "@/lib/domain/automation/validators";
+import { MAX_ACTIONS_PER_PASS } from "@/lib/domain/automation/types";
+import { ticketEvent } from "@/db/schema";
 import { conditionsMatch } from "@/lib/domain/automation/matching";
 import { createAutomationContext, evaluateTriggers } from "@/lib/domain/automation/engine";
-import { MAX_ACTIONS_PER_PASS } from "@/lib/domain/automation/types";
 import { withTenantContext } from "@/lib/db/transaction";
 
 function ctxFor(
@@ -53,6 +58,22 @@ describe("M8 automation rules", () => {
     adminA = adm;
     agentA = agt;
     requesterA = req;
+  });
+
+  it("rejects unknown trigger on save", () => {
+    expect(() => assertAutomationTrigger("not_a_real_trigger")).toThrow(AutomationValidationError);
+  });
+
+  it("rejects requester as assignee on save", async () => {
+    const ctx = ctxFor(adminA.id, orgAId, ["automation:manage", "admin:access"]);
+    await expect(
+      AutomationRepository.create(ctx, {
+        name: `M8 bad assignee ${Date.now()}`,
+        kind: "assignment",
+        conditions: { all: [] },
+        actions: [{ type: "assign", assigneeUserId: requesterA.id }],
+      })
+    ).rejects.toThrow(AutomationValidationError);
   });
 
   it("rejects unknown condition fields on save", () => {
@@ -269,6 +290,81 @@ describe("M8 automation rules", () => {
       true
     );
     expect(agentEvents.some((e) => e.kind === "comment_internal")).toBe(true);
+  });
+
+  it("AC-M8-023: status ping-pong rules stay bounded in one user pass", async () => {
+    const adminB = await db.query.user.findFirst({ where: eq(user.email, "admin@org-b.test") });
+    const requesterB = await db.query.user.findFirst({
+      where: eq(user.email, "requester@org-b.test"),
+    });
+    if (!adminB || !requesterB) throw new Error("Org B seed missing");
+
+    const adminCtx = ctxFor(adminB.id, orgBId, [
+      "automation:manage",
+      "admin:access",
+      "ticket:create",
+      "ticket:read_org",
+      "ticket:update_status",
+    ]);
+    const tag = `M8-pingpong-${Date.now()}`;
+
+    await AutomationRepository.create(adminCtx, {
+      name: `${tag}-to-resolved`,
+      kind: "trigger",
+      trigger: "status_changed",
+      triggerConfig: { toStatus: "resolved" },
+      sortOrder: 0,
+      conditions: { all: [] },
+      actions: [{ type: "set_status", toStatus: "open" }],
+    });
+    await AutomationRepository.create(adminCtx, {
+      name: `${tag}-to-open`,
+      kind: "trigger",
+      trigger: "status_changed",
+      triggerConfig: { toStatus: "open" },
+      sortOrder: 1,
+      conditions: { all: [] },
+      actions: [{ type: "set_status", toStatus: "resolved" }],
+    });
+
+    const requesterCtx = ctxFor(requesterB.id, orgBId, ["ticket:create", "portal:access"], "requester");
+    const created = await TicketRepository.create(requesterCtx, {
+      type: "incident",
+      subject: tag,
+      description: "loop guard",
+    });
+    expect(created.status).toBe("open");
+
+    await TicketRepository.updateStatus(adminCtx, created.id, "in_progress");
+    const afterResolve = await TicketRepository.updateStatus(adminCtx, created.id, "resolved");
+    expect(afterResolve.status).toBe("open");
+
+    const autoStatusEvents = await db.query.ticketEvent.findMany({
+      where: and(eq(ticketEvent.ticketId, created.id), eq(ticketEvent.kind, "status_change")),
+    });
+    const automationStatusChanges = autoStatusEvents.filter(
+      (e) => e.metadata?.includes('"source":"automation"') && e.metadata?.includes("set_status")
+    );
+    expect(automationStatusChanges.length).toBe(1);
+    expect(automationStatusChanges.length).toBeLessThanOrEqual(MAX_ACTIONS_PER_PASS);
+
+    const autoCtx = createAutomationContext(orgBId, created.id);
+    autoCtx.depth = 1;
+    await withTenantContext(adminCtx, async (tx) => {
+      const row = await tx.query.ticket.findFirst({ where: eq(ticket.id, created.id) });
+      if (!row) throw new Error("ticket missing");
+      const before = autoCtx.actionExecutions;
+      await evaluateTriggers(
+        tx,
+        adminCtx,
+        row,
+        "status_changed",
+        autoCtx,
+        [],
+        { fromStatus: "open", toStatus: "resolved" }
+      );
+      expect(autoCtx.actionExecutions).toBe(before);
+    });
   });
 
   it("skips trigger evaluation when depth > 0", async () => {

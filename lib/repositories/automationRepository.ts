@@ -8,6 +8,7 @@ import {
   AutomationValidationError,
   validateRuleShape,
 } from "@/lib/domain/automation/validators";
+import { validateAssigneeTargets } from "@/lib/domain/automation/assigneeValidation";
 import type { AutomationRuleKind, AutomationTrigger } from "@/lib/domain/automation/types";
 
 export type AutomationRuleInput = {
@@ -25,29 +26,34 @@ export type AutomationRuleInput = {
 export class AutomationRepository {
   static async list(ctx: RequestContext) {
     requirePermission(ctx, "automation:manage");
-    return db.query.automationRule.findMany({
-      where: eq(automationRule.organizationId, ctx.orgId),
-      orderBy: [asc(automationRule.sortOrder), asc(automationRule.name)],
-    });
+    return withTenantContext(ctx, async (tx) =>
+      tx.query.automationRule.findMany({
+        where: eq(automationRule.organizationId, ctx.orgId),
+        orderBy: [asc(automationRule.sortOrder), asc(automationRule.name)],
+      })
+    );
   }
 
   static async getById(ctx: RequestContext, id: string) {
     requirePermission(ctx, "automation:manage");
-    const row = await db.query.automationRule.findFirst({
-      where: and(eq(automationRule.id, id), eq(automationRule.organizationId, ctx.orgId)),
-    });
+    const row = await withTenantContext(ctx, async (tx) =>
+      tx.query.automationRule.findFirst({
+        where: and(eq(automationRule.id, id), eq(automationRule.organizationId, ctx.orgId)),
+      })
+    );
     if (!row) throw new ForbiddenError("Rule not found");
     return row;
   }
 
   static async create(ctx: RequestContext, input: AutomationRuleInput) {
     requirePermission(ctx, "automation:manage");
-    const { conditions, actions } = validateRuleShape({
+    const { conditions, actions, trigger } = validateRuleShape({
       kind: input.kind,
       trigger: input.trigger,
       conditions: input.conditions,
       actions: input.actions,
     });
+    await validateAssigneeTargets(ctx.orgId, actions);
 
     return withTenantContext(ctx, async (tx) => {
       const [row] = await tx
@@ -59,7 +65,7 @@ export class AutomationRepository {
           kind: input.kind,
           enabled: input.enabled ?? true,
           sortOrder: input.sortOrder ?? 0,
-          trigger: input.kind === "trigger" ? input.trigger! : null,
+          trigger: input.kind === "trigger" ? trigger : null,
           triggerConfig: input.triggerConfig ?? null,
           conditions,
           actions,
@@ -84,12 +90,13 @@ export class AutomationRepository {
   static async update(ctx: RequestContext, id: string, input: AutomationRuleInput) {
     requirePermission(ctx, "automation:manage");
     const existing = await this.getById(ctx, id);
-    const { conditions, actions } = validateRuleShape({
+    const { conditions, actions, trigger } = validateRuleShape({
       kind: input.kind,
       trigger: input.trigger,
       conditions: input.conditions,
       actions: input.actions,
     });
+    await validateAssigneeTargets(ctx.orgId, actions);
 
     return withTenantContext(ctx, async (tx) => {
       const [row] = await tx
@@ -100,7 +107,7 @@ export class AutomationRepository {
           kind: input.kind,
           enabled: input.enabled ?? existing.enabled,
           sortOrder: input.sortOrder ?? existing.sortOrder,
-          trigger: input.kind === "trigger" ? input.trigger! : null,
+          trigger: input.kind === "trigger" ? trigger : null,
           triggerConfig: input.triggerConfig ?? null,
           conditions,
           actions,
