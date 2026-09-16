@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { ForbiddenError, UnauthorizedError } from "./context";
 
 export function redirectToSignIn(reason: "session" | "membership" | "forbidden" | "unknown"): never {
@@ -6,6 +7,9 @@ export function redirectToSignIn(reason: "session" | "membership" | "forbidden" 
 }
 
 export function handleAuthLayoutFailure(error: unknown): never {
+  if (isRedirectError(error)) {
+    throw error;
+  }
   if (error instanceof UnauthorizedError) {
     redirectToSignIn("session");
   }

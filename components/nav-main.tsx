@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { ShellNavIcon } from "@/components/shell-nav-icon";
 import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   isShellNavItemActive,
@@ -39,7 +40,10 @@ export function NavMain({ sections }: { sections: ShellNavSection[] }) {
                     tooltip={item.title}
                     className={shellChromeType.navItem}
                   >
-                    <item.icon className={shellChromeType.navIcon} aria-hidden />
+                    <ShellNavIcon
+                      name={item.icon}
+                      className={shellChromeType.navIcon}
+                    />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

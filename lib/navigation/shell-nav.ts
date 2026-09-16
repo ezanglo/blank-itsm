@@ -1,26 +1,25 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  BarChart3,
-  BookOpen,
-  Bot,
-  ClipboardList,
-  Home,
-  Inbox,
-  LayoutGrid,
-  Palette,
-  PlusCircle,
-  ScrollText,
-  Shield,
-  Ticket,
-  Users,
-} from "lucide-react";
-
 export type ShellSurface = "portal" | "agent" | "admin";
+
+/** Serializable icon key — resolved on the client (Lucide components cannot cross RSC boundaries). */
+export type ShellNavIconKey =
+  | "home"
+  | "ticket"
+  | "plusCircle"
+  | "layoutGrid"
+  | "bookOpen"
+  | "inbox"
+  | "barChart3"
+  | "users"
+  | "shield"
+  | "bot"
+  | "palette"
+  | "scrollText"
+  | "clipboardList";
 
 export type ShellNavItem = {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: ShellNavIconKey;
 };
 
 export type ShellNavSection = {
@@ -54,47 +53,47 @@ export function shellSurfaceHome(surface: ShellSurface): string {
 }
 
 const portalMain: ShellNavItem[] = [
-  { title: "Home", url: "/portal", icon: Home },
-  { title: "My tickets", url: "/portal/tickets", icon: Ticket },
-  { title: "New request", url: "/portal/tickets/new", icon: PlusCircle },
-  { title: "Catalog", url: "/portal/catalog", icon: LayoutGrid },
-  { title: "Help / Knowledge", url: "/portal/knowledge", icon: BookOpen },
+  { title: "Home", url: "/portal", icon: "home" },
+  { title: "My tickets", url: "/portal/tickets", icon: "ticket" },
+  { title: "New request", url: "/portal/tickets/new", icon: "plusCircle" },
+  { title: "Catalog", url: "/portal/catalog", icon: "layoutGrid" },
+  { title: "Help / Knowledge", url: "/portal/knowledge", icon: "bookOpen" },
 ];
 
 const agentMain: ShellNavItem[] = [
-  { title: "Queue", url: "/agent", icon: Inbox },
-  { title: "Reports", url: "/agent/reports", icon: BarChart3 },
+  { title: "Queue", url: "/agent", icon: "inbox" },
+  { title: "Reports", url: "/agent/reports", icon: "barChart3" },
 ];
 
 const adminSections: ShellNavSection[] = [
   {
     label: "Workspace",
-    items: [{ title: "Reports", url: "/admin/reports", icon: BarChart3 }],
+    items: [{ title: "Reports", url: "/admin/reports", icon: "barChart3" }],
   },
   {
     label: "People",
     items: [
-      { title: "Users", url: "/admin/users", icon: Users },
-      { title: "Roles", url: "/admin/roles", icon: Shield },
+      { title: "Users", url: "/admin/users", icon: "users" },
+      { title: "Roles", url: "/admin/roles", icon: "shield" },
     ],
   },
   {
     label: "Service",
     items: [
-      { title: "Catalog", url: "/admin/catalog", icon: LayoutGrid },
-      { title: "Knowledge", url: "/admin/knowledge", icon: BookOpen },
-      { title: "SLA", url: "/admin/sla", icon: ClipboardList },
+      { title: "Catalog", url: "/admin/catalog", icon: "layoutGrid" },
+      { title: "Knowledge", url: "/admin/knowledge", icon: "bookOpen" },
+      { title: "SLA", url: "/admin/sla", icon: "clipboardList" },
     ],
   },
   {
     label: "Automation",
-    items: [{ title: "Automation", url: "/admin/automation", icon: Bot }],
+    items: [{ title: "Automation", url: "/admin/automation", icon: "bot" }],
   },
   {
     label: "Org",
     items: [
-      { title: "Branding", url: "/admin/branding", icon: Palette },
-      { title: "Audit", url: "/admin/audit", icon: ScrollText },
+      { title: "Branding", url: "/admin/branding", icon: "palette" },
+      { title: "Audit", url: "/admin/audit", icon: "scrollText" },
     ],
   },
 ];
@@ -110,11 +109,11 @@ export function buildShellNav(
       secondary.push({
         title: "Agent workspace",
         url: "/agent",
-        icon: Inbox,
+        icon: "inbox",
       });
     }
     if (permissions.canAdmin) {
-      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: Shield });
+      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: "shield" });
     }
     return {
       surface,
@@ -124,9 +123,9 @@ export function buildShellNav(
   }
 
   if (surface === "agent") {
-    secondary.push({ title: "Portal", url: "/portal", icon: Home });
+    secondary.push({ title: "Portal", url: "/portal", icon: "home" });
     if (permissions.canAdmin) {
-      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: Shield });
+      secondary.push({ title: "Admin", url: ADMIN_SHELL_HOME, icon: "shield" });
     }
     return {
       surface,
@@ -135,8 +134,8 @@ export function buildShellNav(
     };
   }
 
-  secondary.push({ title: "Agent workspace", url: "/agent", icon: Inbox });
-  secondary.push({ title: "Portal", url: "/portal", icon: Home });
+  secondary.push({ title: "Agent workspace", url: "/agent", icon: "inbox" });
+  secondary.push({ title: "Portal", url: "/portal", icon: "home" });
 
   return {
     surface,
