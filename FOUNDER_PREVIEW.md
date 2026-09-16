@@ -5,25 +5,26 @@
 | Item | Value |
 |------|--------|
 | **Product name** | `blank-itsm` |
-| **Origin slug (current)** | `ezraanglo/tmp-24caffaea01e301c` |
-| **HTTPS clone** | `https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git` |
-| **Codebase** | [cursor.com/codebase/ezraanglo/tmp-24caffaea01e301c](https://cursor.com/codebase/ezraanglo/tmp-24caffaea01e301c) |
+| **Canonical Origin slug** | `ezraanglo/blank-itsm` |
+| **HTTPS clone** | `https://origin.cursor.com/git/ezraanglo/blank-itsm.git` |
+| **Codebase** | [cursor.com/codebase/ezraanglo/blank-itsm](https://cursor.com/codebase/ezraanglo/blank-itsm) |
 
-### Rename Origin slug to `blank-itsm` (Founder UI)
+### Superseded temp repository
 
-The Origin CLI in Cloud Agent VMs does not expose `origin repo rename`. Automated rename was not attempted with credentials here.
+New Project used a temporary Origin slug while the product name was already `blank-itsm`:
 
-**Founder steps (when the UI supports rename):**
+| | |
+|--|--|
+| **Old slug** | `ezraanglo/tmp-24caffaea01e301c` |
+| **Old clone** | `https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git` |
 
-1. Open [Origin repository settings](https://origin.cursor.com/ezraanglo/tmp-24caffaea01e301c) (or Codebase → Settings for this repo).
-2. Change the repository **slug** / **name** from `tmp-24caffaea01e301c` to `blank-itsm` under owner `ezraanglo`.
-3. Update local remotes after rename:
-   ```bash
-   git remote set-url origin https://origin.cursor.com/git/ezraanglo/blank-itsm.git
-   ```
-4. Expected clone URL after rename: `https://origin.cursor.com/git/ezraanglo/blank-itsm.git`
+Branches and `main` were mirrored to **`ezraanglo/blank-itsm`**. Point Cloud Agents and local clones at the canonical URLs above.
 
-Until rename completes, docs and `package.json` already use the **blank-itsm** product name; only the Origin path segment stays temporary.
+**Optional cleanup:** delete `tmp-24caffaea01e301c` in Origin when you no longer need it (`origin repo delete ezraanglo/tmp-24caffaea01e301c` only if you are sure — the temp repo was left in place by default).
+
+```bash
+git remote set-url origin https://origin.cursor.com/git/ezraanglo/blank-itsm.git
+```
 
 ## Continuous integration (no Neon)
 

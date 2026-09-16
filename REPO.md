@@ -7,12 +7,13 @@ Canonical ops reference for slug, CI, and database roles. Preview/sign-in detail
 | | |
 |--|--|
 | Product name | `blank-itsm` (`package.json`) |
-| Origin slug (today) | `ezraanglo/tmp-24caffaea01e301c` |
-| Clone | `https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git` |
+| **Canonical Origin slug** | `ezraanglo/blank-itsm` |
+| **HTTPS clone** | `https://origin.cursor.com/git/ezraanglo/blank-itsm.git` |
+| **Codebase** | [cursor.com/codebase/ezraanglo/blank-itsm](https://cursor.com/codebase/ezraanglo/blank-itsm) |
 
-**Rename to `blank-itsm`:** not available via `origin repo` CLI in agent VMs. Founder manual steps: [FOUNDER_PREVIEW.md § Rename](./FOUNDER_PREVIEW.md#rename-origin-slug-to-blank-itsm-founder-ui).
+**Superseded (temp New Project slug):** `ezraanglo/tmp-24caffaea01e301c` — same history was mirrored here; safe to delete from Origin when you no longer need it ([FOUNDER_PREVIEW.md](./FOUNDER_PREVIEW.md#superseded-temp-repository)).
 
-After rename: `https://origin.cursor.com/git/ezraanglo/blank-itsm.git`
+Use **`ezraanglo/blank-itsm`** for new clones and Cloud Agent runs going forward.
 
 ## CI (no Neon / no paid Postgres)
 

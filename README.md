@@ -36,11 +36,11 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 1. **Clone the repository**
 
 ```bash
-git clone https://origin.cursor.com/git/ezraanglo/tmp-24caffaea01e301c.git blank-itsm
+git clone https://origin.cursor.com/git/ezraanglo/blank-itsm.git
 cd blank-itsm
 ```
 
-After the Origin slug is renamed to `blank-itsm`, use `https://origin.cursor.com/git/ezraanglo/blank-itsm.git` (see [FOUNDER_PREVIEW.md](./FOUNDER_PREVIEW.md#rename-origin-slug-to-blank-itsm-founder-ui)).
+Canonical repo: [cursor.com/codebase/ezraanglo/blank-itsm](https://cursor.com/codebase/ezraanglo/blank-itsm). The earlier temp slug `tmp-24caffaea01e301c` is superseded (see [FOUNDER_PREVIEW.md](./FOUNDER_PREVIEW.md)).
 
 2. **Install dependencies**
 
