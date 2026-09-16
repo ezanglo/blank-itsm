@@ -10,6 +10,7 @@ Multi-tenant ITSM (IT Service Management) platform with secure tenant isolation,
 - **Service Desk (M4)**: Ticket timeline with public replies vs internal notes, impact×urgency priority, SLA timers, local file attachments, and outbox email (mock transport in dev)
 - **Catalog & Knowledge (M5)**: Admin service catalog CRUD, portal catalog orders → service_request tickets with optional single-approver workflow, knowledge articles (draft/published), portal KB search with ticket deflection, agent KB linking on reply/resolve
 - **Admin & white-label (M6)**: Roles/permissions reference, hardened user role changes, SLA business-hours calendar and escalation email (mock outbox), branding live preview, org audit log browser
+- **Reporting & ops visibility (M7)**: Org-scoped operations dashboard (backlog, volume, SLA counts, workload by assignee), CSV export for ticket lists, agent and admin surfaces
 - **Agent Queue**: Unassigned and "My Tickets" views with claim/assign functionality
 - **Organization Branding**: Customizable logos and theme colors per organization
 - **Audit Trail**: Comprehensive audit logging for security-sensitive actions
@@ -297,6 +298,14 @@ npx shadcn@latest add <component-name>
 - ✅ **AC-M3-041**: Claim/assign-to-me
 - ✅ **AC-M3-050–052**: Portal home and mobile usability
 - ✅ **AC-M3-060–063**: Security foundation and automated tests
+
+## M7 — Reporting verification (Reviewer → Tester)
+
+1. Re-seed so `report:read` is on agent/admin roles: `npm run db:seed`
+2. `npm test -- --run` — includes **RPT-010** (org isolation), **RPT-011** (permission gate), **RPT-012** (CSV)
+3. `npm run dev` — sign in as `agent@org-a.test`, open **Agent → Reports** (`/agent/reports`)
+4. Confirm backlog/volume/SLA cards and workload table; use **Export** buttons or `GET /api/reports/tickets/export?scope=open`
+5. Optional smoke (dev server running): `npm run test:e2e:m7:smoke`
 
 ## License
 

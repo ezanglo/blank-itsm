@@ -106,6 +106,11 @@ async function seed() {
       name: "Link KB to Tickets",
       description: "Attach knowledge articles when replying or resolving",
     },
+    {
+      key: "report:read",
+      name: "Read Operations Reports",
+      description: "View org dashboards and export ticket reports",
+    },
   ];
 
   const insertedPermissions = await db
@@ -168,6 +173,7 @@ async function seed() {
     { roleKey: "agent", permissionKey: "kb:read" },
     { roleKey: "agent", permissionKey: "kb:manage" },
     { roleKey: "agent", permissionKey: "kb:link" },
+    { roleKey: "agent", permissionKey: "report:read" },
 
     // Admin permissions (all)
     { roleKey: "admin", permissionKey: "ticket:create" },
@@ -192,6 +198,7 @@ async function seed() {
     { roleKey: "admin", permissionKey: "kb:read" },
     { roleKey: "admin", permissionKey: "kb:manage" },
     { roleKey: "admin", permissionKey: "kb:link" },
+    { roleKey: "admin", permissionKey: "report:read" },
   ];
 
   for (const rp of rolePermissionsData) {

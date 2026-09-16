@@ -45,6 +45,9 @@ export default async function AdminLayout({
               <Link href="/admin/audit">
                 <Button variant="ghost">Audit</Button>
               </Link>
+              <Link href="/admin/reports">
+                <Button variant="ghost">Reports</Button>
+              </Link>
               <Link href="/admin/catalog">
                 <Button variant="ghost">Catalog</Button>
               </Link>

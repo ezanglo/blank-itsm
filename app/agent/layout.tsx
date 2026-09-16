@@ -56,6 +56,9 @@ export default async function AgentLayout({
               <Link href="/agent">
                 <Button variant="ghost">Queue</Button>
               </Link>
+              <Link href="/agent/reports">
+                <Button variant="ghost">Reports</Button>
+              </Link>
               <Link href="/portal">
                 <Button variant="ghost">Portal</Button>
               </Link>
