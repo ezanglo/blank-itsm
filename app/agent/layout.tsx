@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { buildRequestContext, hasPermission } from "@/lib/auth/context";
 import { handleAuthLayoutFailure } from "@/lib/auth/redirect";
-import { BrandingRepository } from "@/lib/repositories/brandingRepository";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { loadShellBranding } from "@/lib/shell/load-shell-branding";
 import { buildShellNav } from "@/lib/navigation/shell-nav";
 import { getShellUser } from "@/lib/navigation/shell-session";
 
@@ -24,18 +24,8 @@ export default async function AgentLayout({
   children: React.ReactNode;
 }) {
   const ctx = await getAgentContext();
-  const branding = await BrandingRepository.getForOrg(ctx.orgId);
+  const { logoUrl, brandingStyle } = await loadShellBranding(ctx.orgId);
   const user = await getShellUser();
-
-  const brandingStyle: Record<string, string> = {};
-  if (branding?.tokens) {
-    if (branding.tokens.primary) {
-      brandingStyle["--primary"] = branding.tokens.primary;
-    }
-    if (branding.tokens.primaryForeground) {
-      brandingStyle["--primary-foreground"] = branding.tokens.primaryForeground;
-    }
-  }
 
   const nav = buildShellNav("agent", {
     canAgent: true,
@@ -45,7 +35,7 @@ export default async function AgentLayout({
   return (
     <DashboardShell
       nav={nav}
-      branding={{ logoUrl: branding?.logoUrl }}
+      branding={{ logoUrl }}
       user={user}
       brandingStyle={brandingStyle}
     >
