@@ -1,8 +1,13 @@
 import { defineConfig } from "drizzle-kit";
 import "dotenv/config";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
+const migrateUrl =
+  process.env.DATABASE_URL_DIRECT?.trim() || process.env.DATABASE_URL?.trim();
+
+if (!migrateUrl) {
+  throw new Error(
+    "DATABASE_URL_DIRECT or DATABASE_URL is required for drizzle-kit (prefer direct Neon URL for migrate)."
+  );
 }
 
 export default defineConfig({
@@ -10,7 +15,7 @@ export default defineConfig({
   out: "./db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: migrateUrl,
   },
   verbose: true,
   strict: true,

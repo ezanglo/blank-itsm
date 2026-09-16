@@ -11,6 +11,7 @@
     "ci": "npm run lint && npm test -- --run && DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/blank_itsm} BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-ci-test-secret-not-for-production} npm run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:neon": "bash scripts/db-migrate-neon.sh",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx db/seed.ts",
