@@ -22,9 +22,15 @@ Branches and `main` were mirrored to **`ezraanglo/blank-itsm`**. Point Cloud Age
 
 **Optional cleanup:** delete `tmp-24caffaea01e301c` in Origin when you no longer need it (`origin repo delete ezraanglo/tmp-24caffaea01e301c` only if you are sure — the temp repo was left in place by default).
 
+**If the canonical repo is not on Origin yet** (Cloud Agent tokens often lack `namespace:repositories:create`), create it from your account (Private or Internal — match temp visibility), then mirror from this clone:
+
 ```bash
+origin repo create blank-itsm --repo ezraanglo/blank-itsm   # Founder machine / full Origin login
+./scripts/mirror-origin-blank-itsm.sh
 git remote set-url origin https://origin.cursor.com/git/ezraanglo/blank-itsm.git
 ```
+
+Or use **Create repo** in the New Project UI with slug `blank-itsm`, then run `./scripts/mirror-origin-blank-itsm.sh` (the script skips create when the repo already exists).
 
 ## Continuous integration (no Neon)
 
