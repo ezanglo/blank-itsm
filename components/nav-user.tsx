@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { shellChromeType } from "@/lib/shell/chrome-typography";
 
 export type ShellUser = {
   name: string;
@@ -48,21 +49,23 @@ export function NavUser({ user }: { user: ShellUser }) {
               <SidebarMenuButton
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                aria-label="Account menu"
               />
             }
           >
             <Avatar className="size-8 rounded-lg">
-              <AvatarFallback className="rounded-lg">
+              <AvatarFallback className="rounded-lg text-xs font-medium">
                 {initials(user.name, user.email)}
               </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs text-muted-foreground">
-                {user.email}
-              </span>
+            <div className="grid min-w-0 flex-1 text-left leading-tight">
+              <span className={shellChromeType.accountName}>{user.name}</span>
+              <span className={shellChromeType.accountEmail}>{user.email}</span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4" />
+            <ChevronsUpDown
+              className="ml-auto size-4 shrink-0 opacity-60"
+              aria-hidden
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-56 rounded-lg"
@@ -71,15 +74,15 @@ export function NavUser({ user }: { user: ShellUser }) {
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left">
                 <Avatar className="size-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">
+                  <AvatarFallback className="rounded-lg text-xs font-medium">
                     {initials(user.name, user.email)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                <div className="grid min-w-0 flex-1 text-left leading-tight">
+                  <span className={shellChromeType.accountName}>{user.name}</span>
+                  <span className={shellChromeType.accountEmail}>
                     {user.email}
                   </span>
                 </div>
@@ -92,8 +95,11 @@ export function NavUser({ user }: { user: ShellUser }) {
                 method="POST"
                 className="flex w-full items-center gap-2"
               >
-                <button type="submit" className="flex w-full items-center gap-2">
-                  <LogOut className="size-4" />
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 text-sm font-medium"
+                >
+                  <LogOut className="size-4 shrink-0" aria-hidden />
                   Sign out
                 </button>
               </form>

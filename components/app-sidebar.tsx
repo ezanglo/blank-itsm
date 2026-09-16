@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { LifeBuoy } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -16,6 +15,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   defaultProductName,
   type ShellNavConfig,
@@ -53,23 +53,18 @@ export function AppSidebar({
               {branding.logoUrl ? (
                 <img
                   src={branding.logoUrl}
-                  alt="Organization logo"
-                  className="size-8 rounded-md object-contain"
+                  alt=""
+                  className="size-8 shrink-0 rounded-md object-contain"
                 />
               ) : (
                 <span
-                  className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-xs font-medium text-sidebar-foreground"
                   aria-hidden
                 >
-                  <LifeBuoy className="size-4" />
+                  {productName.charAt(0).toUpperCase()}
                 </span>
               )}
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{productName}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {surfaceSubtitle(nav.surface)}
-                </span>
-              </div>
+              <span className={shellChromeType.sidebarOrgName}>{productName}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -94,16 +89,5 @@ function homeHref(surface: ShellSurface): string {
       return "/agent";
     case "admin":
       return "/admin/reports";
-  }
-}
-
-function surfaceSubtitle(surface: ShellSurface): string {
-  switch (surface) {
-    case "portal":
-      return "Request help";
-    case "agent":
-      return "Service desk";
-    case "admin":
-      return "Organization";
   }
 }

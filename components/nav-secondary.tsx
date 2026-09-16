@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   isShellNavItemActive,
   type ShellNavItem,
@@ -25,7 +26,9 @@ export function NavSecondary({ items }: { items: ShellNavItem[] }) {
 
   return (
     <SidebarGroup className="mt-auto">
-      <SidebarGroupLabel>Switch workspace</SidebarGroupLabel>
+      <SidebarGroupLabel className={shellChromeType.groupLabel}>
+        Other workspaces
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
@@ -34,8 +37,9 @@ export function NavSecondary({ items }: { items: ShellNavItem[] }) {
                 render={<Link href={item.url} />}
                 isActive={isShellNavItemActive(pathname, item.url)}
                 tooltip={item.title}
+                className={shellChromeType.navItem}
               >
-                <item.icon />
+                <item.icon className={shellChromeType.navIcon} aria-hidden />
                 <span>{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

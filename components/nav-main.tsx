@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { shellChromeType } from "@/lib/shell/chrome-typography";
 import {
   isShellNavItemActive,
   type ShellNavSection,
@@ -24,7 +25,9 @@ export function NavMain({ sections }: { sections: ShellNavSection[] }) {
       {sections.map((section) => (
         <SidebarGroup key={section.label ?? "main"}>
           {section.label ? (
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className={shellChromeType.groupLabel}>
+              {section.label}
+            </SidebarGroupLabel>
           ) : null}
           <SidebarGroupContent>
             <SidebarMenu>
@@ -34,8 +37,9 @@ export function NavMain({ sections }: { sections: ShellNavSection[] }) {
                     render={<Link href={item.url} />}
                     isActive={isShellNavItemActive(pathname, item.url)}
                     tooltip={item.title}
+                    className={shellChromeType.navItem}
                   >
-                    <item.icon />
+                    <item.icon className={shellChromeType.navIcon} aria-hidden />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
