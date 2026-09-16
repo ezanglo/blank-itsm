@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { buildRequestContext, hasPermission } from "@/lib/auth/context";
 import { handleAuthLayoutFailure } from "@/lib/auth/redirect";
 import { BrandingRepository } from "@/lib/repositories/brandingRepository";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { DashboardShell } from "@/components/dashboard-shell";
+import { buildShellNav } from "@/lib/navigation/shell-nav";
+import { getShellUser } from "@/lib/navigation/shell-session";
 
 async function getAgentContext() {
   try {
@@ -23,11 +24,9 @@ export default async function AgentLayout({
   children: React.ReactNode;
 }) {
   const ctx = await getAgentContext();
-  
-  // Get branding for this organization
   const branding = await BrandingRepository.getForOrg(ctx.orgId);
-  
-  // Build CSS variables for branding
+  const user = await getShellUser();
+
   const brandingStyle: Record<string, string> = {};
   if (branding?.tokens) {
     if (branding.tokens.primary) {
@@ -38,45 +37,19 @@ export default async function AgentLayout({
     }
   }
 
+  const nav = buildShellNav("agent", {
+    canAgent: true,
+    canAdmin: hasPermission(ctx, "admin:access"),
+  });
+
   return (
-    <div className="min-h-screen flex flex-col" style={brandingStyle}>
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            {branding?.logoUrl ? (
-              <img
-                src={branding.logoUrl}
-                alt="Organization logo"
-                className="h-8 w-auto"
-              />
-            ) : (
-              <h1 className="text-xl font-semibold">Agent Workspace</h1>
-            )}
-            <nav className="hidden md:flex gap-4">
-              <Link href="/agent">
-                <Button variant="ghost">Queue</Button>
-              </Link>
-              <Link href="/agent/reports">
-                <Button variant="ghost">Reports</Button>
-              </Link>
-              <Link href="/portal">
-                <Button variant="ghost">Portal</Button>
-              </Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            {hasPermission(ctx, "admin:access") && (
-              <Link href="/admin">
-                <Button variant="outline">Admin</Button>
-              </Link>
-            )}
-            <form action="/api/auth/sign-out" method="POST">
-              <Button variant="ghost">Sign Out</Button>
-            </form>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
-    </div>
+    <DashboardShell
+      nav={nav}
+      branding={{ logoUrl: branding?.logoUrl }}
+      user={user}
+      brandingStyle={brandingStyle}
+    >
+      {children}
+    </DashboardShell>
   );
 }
