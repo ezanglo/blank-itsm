@@ -305,7 +305,8 @@ npx shadcn@latest add <component-name>
 2. `npm test -- --run` — includes **RPT-010** (org isolation), **RPT-011** (all report paths + requester), **RPT-012** (CSV format), **RPT-013** (export HTTP 401/403 + tenant CSV)
 3. `npm run dev` — sign in as `agent@org-a.test`, open **Agent → Reports** (`/agent/reports`)
 4. Confirm backlog/volume/SLA cards and workload table; use **Export** buttons or `GET /api/reports/tickets/export?scope=open`
-5. Optional smoke (dev server running): `npm run test:e2e:m7:smoke`
+5. In-VM Tester evidence (no Preview SSO): `npm run test:e2e:m7` → `reviews/E2E_M7_ACCEPTANCE_SUMMARY.md`
+6. Optional quick smoke: `npm run test:e2e:m7:smoke`
 
 ## License
 

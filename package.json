@@ -20,6 +20,7 @@
     "test:e2e:m5": "tsx scripts/m5-e2e-acceptance.ts",
     "test:e2e:m5:smoke": "tsx scripts/m5-e2e-smoke.ts",
     "test:e2e:m6": "tsx scripts/m6-e2e-acceptance.ts",
+    "test:e2e:m7": "tsx scripts/m7-e2e-acceptance.ts",
     "test:e2e:m7:smoke": "tsx scripts/m7-e2e-smoke.ts"
   },
   "dependencies": {

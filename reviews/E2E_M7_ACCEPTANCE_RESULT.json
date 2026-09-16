@@ -1,0 +1,86 @@
+{
+  "milestone": "M7",
+  "overall": "PASS",
+  "passed": 5,
+  "total": 5,
+  "runAt": "2026-09-16T07:21:19.733Z",
+  "baseUrl": "http://127.0.0.1:43123",
+  "commit": "ffe0acd08f7b8fc2e7f7f832bb815c107758c100",
+  "branch": "cursor/m7-reporting-e542",
+  "vitestM7": {
+    "command": "npm test -- --run tests/m7-reporting.test.ts",
+    "passed": 11,
+    "total": 11,
+    "status": "PASS"
+  },
+  "scenarios": [
+    {
+      "id": "M7-1a",
+      "briefScenario": "1",
+      "title": "Agent /agent/reports org-scoped dashboard",
+      "status": "PASS",
+      "notes": "Dashboard sections and org-scoped ticket table verified",
+      "screenshot": "e2e-screenshots/m7/01-agent-reports-dashboard.png",
+      "assertions": [
+        "Open backlog card present",
+        "Volume card present",
+        "SLA attention card present",
+        "SLA breached card present",
+        "Workload table present",
+        "Ticket list table present",
+        "Org A subject \"Cannot access email\" in table",
+        "Org B subject \"Network issue\" absent"
+      ]
+    },
+    {
+      "id": "M7-1b",
+      "briefScenario": "1",
+      "title": "Admin /admin/reports org-scoped dashboard",
+      "status": "PASS",
+      "notes": "Admin reports surface matches agent metrics with export controls",
+      "screenshot": "e2e-screenshots/m7/02-admin-reports-dashboard.png",
+      "assertions": [
+        "Operations dashboard",
+        "CSV export controls",
+        "Org A-only subjects"
+      ]
+    },
+    {
+      "id": "M7-2",
+      "briefScenario": "2",
+      "title": "CSV export scope=all and scope=open",
+      "status": "PASS",
+      "notes": "all HTTP 200, open HTTP 200; open data rows=2",
+      "assertions": [
+        "GET export?scope=all returns 200 CSV with header",
+        "GET export?scope=open returns 200 without resolved/closed rows"
+      ]
+    },
+    {
+      "id": "M7-3",
+      "briefScenario": "3",
+      "title": "Requester denied reports UI and export (no report:read)",
+      "status": "PASS",
+      "notes": "Export HTTP 403; agent URL http://127.0.0.1:43123/sign-in?error=unknown; admin URL http://127.0.0.1:43123/sign-in?error=unknown (no dashboard)",
+      "screenshot": "e2e-screenshots/m7/03-requester-blocked.png",
+      "assertions": [
+        "Export API returns 403",
+        "Cannot view Operations dashboard on /agent/reports",
+        "Cannot view Operations dashboard on /admin/reports"
+      ]
+    },
+    {
+      "id": "M7-4",
+      "briefScenario": "4",
+      "title": "Org A/B CSV and dashboard isolation",
+      "status": "PASS",
+      "notes": "Org A and Org B exports and dashboard contain only tenant subjects",
+      "screenshot": "e2e-screenshots/m7/04-org-a-isolation.png",
+      "assertions": [
+        "Org A CSV contains \"Cannot access email\" not \"Network issue\"",
+        "Org B CSV contains \"Network issue\" not \"Cannot access email\"",
+        "Org A dashboard HTML matches CSV isolation"
+      ]
+    }
+  ]
+}
